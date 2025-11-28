@@ -1,117 +1,744 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<title>Merged Word Finder</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Word Finder</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            /* Dark Theme (Default) */
+            --bg-color: #1a1c2c; --box-color: #252a41; --input-bg-color: #3b4262;
+            --text-color: #e0e0e0; --text-muted-color: #9ab; --header-color: #ffffff;
+            --primary-color: #00bcd4; --secondary-color: #0097a7;
+            --history-bg: #1e2236; --history-box-bg: #2f3653; --history-border: #3b4262;
+            
+            --copied-color-start: #84ffff; --copied-color-end: #00e5ff;
+            
+            --game-mode-color: #ffc107; --reset-color: #ff5252;
+            --include-color: #3498db; --exclude-color: #e74c3c;
+            --bomb-selected-color: #2ecc71; --check-color: #2ecc71;
+            --define-color: #9b59b6;
+        }
+        
+        body.light-theme {
+            --bg-color: #f4f7f6; --box-color: #ffffff; --input-bg-color: #ffffff;
+            --text-color: #333; --text-muted-color: #777; --header-color: #1a535c;
+            --primary-color: #1a535c; --secondary-color: #4ecdc4;
+            --history-bg: #333; --history-text: #fff;
+            --history-box-bg: #444; --history-border: #555;
+        }
+        
+        body.retro-theme {
+            --bg-color: #000000; --box-color: #0d0d0d; --input-bg-color: #222;
+            --text-color: #00FF00; --text-muted-color: #00FF00;
+            --header-color: #00FF00; --primary-color: #00FF00;
+            --secondary-color: #00FF00; --history-bg: #0a0a0a;
+            --history-box-bg: #1a1a1a; --history-border: #333;
+            --copied-color-start: #00e5ff; --copied-color-end: #84ffff;
+            --game-mode-color: #FFFF00; --reset-color: #FF0000;
+            --include-color: #0000FF; --exclude-color: #FF0000;
+            --bomb-selected-color: #00FF00; --check-color: #00FF00;
+            font-family: 'Courier New', Courier, monospace;
+        }
 
-<style>
-:root{
-  --bg-color: #0f1724; --box-color: #0b1220; --input-bg-color:#0b1220; --text-color:#e6eef8;
-  --text-muted-color:#9aa6b2; --header-color:#7dd3fc; --primary-color:#7dd3fc; --secondary-color:#60a5fa;
-  --history-bg:#0a1622; --history-box-bg:#071225; --history-border:#15324a; --copied-color-start:#00e5ff; --copied-color-end:#84ffff;
-  --game-mode-color:#f59e0b; --reset-color:#ef4444; --include-color:#10b981; --exclude-color:#ef4444; --bomb-selected-color:#f97316; --check-color:#a3e635;
-}
-body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: var(--bg-color); color: var(--text-color); margin: 0; padding: 0; transition: background-color 0.3s, color 0.3s; display: flex; flex-direction: column; min-height: 100vh; box-sizing: border-box; }
-/* Top History Panel - Horizontal */
-#history-panel { position: fixed; top: 0; left: 0; width: 100%; height: 250px; background-color: var(--history-bg); color: var(--text-color); padding: 1rem; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); transform: translateY(-100%); transition: transform 0.3s ease-in-out; z-index: 1000; overflow-y: auto; }
-#history-panel.open { transform: translateY(0); }
-#history-content { display: flex; flex-wrap: nowrap; gap: 15px; overflow-x: auto; padding-bottom: 10px; }
-.game-session { min-width: 250px; background: var(--history-box-bg); border-radius: 8px; padding: 10px; border: 1px solid var(--history-border); flex-shrink: 0; }
+        /* Base Layout */
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-color); color: var(--text-color);
+            margin: 0; padding: 2rem;
+            transition: background-color 0.3s, color 0.3s;
+            display: grid;
+            grid-template-columns: 1fr 320px; /* Main content | Sidebar */
+            grid-template-rows: auto 1fr; /* Header | Content */
+            grid-template-areas: 
+                "header header"
+                "main sidebar";
+            gap: 1.5rem;
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+        
+        #header-bar {
+            grid-area: header;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+        }
+        
+        h1 { 
+            color: var(--header-color); 
+            font-weight: 700; 
+            margin: 0;
+        }
+        
+        #utility-bar {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        #utility-bar-left {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-right: auto; /* Pushes left group to the left */
+        }
+        
+        #main-column {
+            grid-area: main;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            min-width: 0; /* Fix for flexbox overflow */
+        }
+        
+        #sidebar-column {
+            grid-area: sidebar;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            min-width: 0;
+        }
+        
+        .card {
+            background: var(--box-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            box-sizing: border-box;
+            transition: background-color 0.3s;
+        }
+        
+        /* Search Form */
+        #search-form {
+            display: flex;
+            gap: 10px;
+        }
+        #search-input {
+            font-size: 1rem; padding: 0.75rem; border: 1px solid var(--history-border);
+            border-radius: 8px; background-color: var(--input-bg-color);
+            color: var(--text-color); flex-grow: 1;
+        }
+        #search-button { font-weight: 600; padding: 0.75rem 1rem; }
+        
+        #filter-grid {
+            display: grid;
+            grid-template-columns: 1fr; /* Stack all filters */
+            gap: 15px;
+        }
+        .filter-group { display: flex; flex-direction: column; gap: 5px; }
+        .filter-group label {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-muted-color);
+        }
+        #search-filter, #cap-filter, #length-filter, #unique-filter {
+            font-family: 'Inter', sans-serif;
+            font-size: 1rem; padding: 0.5rem; border: 1px solid var(--history-border);
+            border-radius: 8px; background-color: var(--input-bg-color);
+            color: var(--text-color); cursor: pointer;
+        }
 
-/* New Header Layout */
-#header-bar { display: flex; justify-content: space-between; align-items: center; padding: 20px; background: var(--box-color); box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); position: relative; z-index: 900; gap: 20px; }
-#left-buttons, #right-buttons { display: flex; gap: 10px; flex-wrap: wrap; }
-#search-form-container { display: flex; gap: 10px; align-items: center; }
+        button, .btn {
+            font-size: 0.9rem; padding: 0.6rem 0.8rem; border: none;
+            border-radius: 4px; background-color: var(--primary-color);
+            color: white; cursor: pointer;
+            transition: background-color 0.2s; white-space: nowrap;
+        }
+        button:hover, .btn:hover { background-color: var(--secondary-color); }
+        
+        .add-btn { padding: 3px 8px; font-size: 1rem; line-height: 1; }
+        #add-include-button { background-color: var(--include-color); }
+        #add-exclude-button { background-color: var(--exclude-color); }
+        #softlock-button { background-color: #9b59b6; }
+        
+        #define-toggle-button.active, #crazy-mode-button.active {
+            background-color: var(--define-color);
+            animation: pulse-define 1.5s infinite;
+        }
+        
+        #game-toggle-button.game-active {
+            background-color: var(--game-mode-color);
+            color: #333;
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(255, 193, 7, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 193, 7, 0); }
+        }
+        @keyframes pulse-define {
+            0% { box-shadow: 0 0 0 0 rgba(155, 89, 182, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(155, 89, 182, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(155, 89, 182, 0); }
+        }
+        #loading-message { font-style: italic; color: var(--text-muted-color); }
+        
+        /* Include/Exclude Tags */
+        #filter-lists-container {
+            display: grid;
+            grid-template-columns: 1fr; /* Stacked in sidebar */
+            gap: 1.5rem;
+        }
+        .filter-list h3 {
+            margin-top: 0; margin-bottom: 10px; font-size: 1rem;
+            color: var(--text-color); display: flex;
+            justify-content: space-between; align-items: center;
+            border-bottom: 2px solid var(--history-border);
+            padding-bottom: 8px;
+        }
+        #include-list-tags, #exclude-list-tags {
+            display: flex; flex-wrap: wrap;
+            gap: 5px; min-height: 30px;
+        }
+        .filter-tag {
+            display: inline-flex; align-items: center;
+            padding: 5px 10px; border-radius: 15px;
+            font-size: 0.9rem; font-weight: 500;
+        }
+        .filter-tag-include { background-color: var(--include-color); color: white; }
+        .filter-tag-exclude { background-color: var(--exclude-color); color: white; }
+        .remove-tag-btn {
+            background: none; border: none;
+            color: white; font-weight: bold;
+            font-size: 1.1rem; margin-left: 5px;
+            cursor: pointer; padding: 0 5px;
+        }
 
-/* Side Panels */
-.side-panel { position: fixed; top: 0; height: 100%; width: 320px; background: var(--box-color); padding: 2rem; box-shadow: 0 0 20px rgba(0, 0, 0, 0.3); transition: transform 0.3s ease-in-out; z-index: 999; overflow-y: auto; }
-.side-panel.left { left: 0; transform: translateX(-100%); }
-.side-panel.right { right: 0; transform: translateX(100%); }
-.side-panel.open { transform: translateX(0); }
-.side-panel h2 { margin-top: 0; border-bottom: 2px solid var(--secondary-color); padding-bottom: 10px; }
-.panel-close-btn { position: absolute; top: 10px; right: 10px; background: var(--reset-color); padding: 5px 10px; font-size: 1.2rem; color: white; border: none; cursor: pointer; }
-.option-btn { display: block; width: 100%; margin: 10px 0; text-align: left; padding: 12px; font-size: 1rem; background: transparent; color: var(--text-color); border: 1px solid transparent; border-radius: 6px; cursor: pointer; }
-.option-btn.selected { background-color: var(--check-color); color: #111; }
-
-/* Length Panel Special Styles */
-#length-input { font-size: 1rem; padding: 0.75rem; border: 1px solid var(--history-border); border-radius: 8px; background-color: var(--input-bg-color); color: var(--text-color); width: 100%; margin: 10px 0; }
-.length-btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 10px 0; }
-#range-input-container { display: none; margin: 10px 0; }
-#range-input-container.active { display: flex; gap: 5px; align-items: center; flex-wrap: wrap; }
-#range-input-container input { width: 60px; padding: 5px; border: 1px solid var(--history-border); border-radius: 4px; background-color: var(--input-bg-color); color: var(--text-color); }
-
-/* Main Content Area */
-#main-content { flex: 1; display: flex; justify-content: center; align-items: flex-start; padding: 2rem; }
-#results-container { background: var(--box-color); border-radius: 12px; padding: 2rem; box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1); width: 100%; max-width: 1200px; min-height: 300px; text-align: center; }
-
-/* small utilities */
-.btn { padding:8px 10px; border-radius:6px; border:none; cursor:pointer; background:transparent; color:var(--text-color); }
-.filter-tag { display:inline-flex; gap:6px; align-items:center; padding:6px 8px; border-radius:6px; background:var(--history-box-bg); margin:4px; }
-.remove-tag-btn { background:none; border:none; color:var(--reset-color); cursor:pointer; margin-left:6px; }
-</style>
-
+        /* Results Container */
+        #results-container { 
+            text-align: center; 
+            margin-top: 0;
+            flex-grow: 1;
+            overflow-y: auto;
+            max-height: none; /* Let it fill space */
+        }
+        #results-summary {
+            font-style: italic;
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+            color: var(--text-muted-color);
+        }
+        .word-item {
+            display: inline-block; padding: 0.3rem 0.6rem; margin: 0.2rem;
+            background-color: var(--word-bg-color); color: var(--word-text-color);
+            border-radius: 4px; cursor: pointer;
+            transition: all 0.2s;
+            vertical-align: top; position: relative;
+        }
+        .word-item:hover {
+            background: linear-gradient(135deg, var(--copied-color-start), var(--copied-color-end));
+            color: #111;
+            transform: translateY(-2px);
+        }
+        .word-item.copied {
+            background: linear-gradient(135deg, var(--copied-color-start), var(--copied-color-end));
+            color: #111; font-weight: bold;
+        }
+        .word-item.word-bomb-selected {
+            background: var(--bomb-selected-color);
+            color: #111;
+            font-weight: bold;
+        }
+        .tts-icon {
+            font-size: 0.8em;
+            margin-left: 4px;
+            opacity: 0.5;
+            transition: opacity 0.2s;
+            cursor: pointer;
+        }
+        .word-item:hover .tts-icon { opacity: 1; }
+        
+        #word-tooltip {
+            position: absolute; display: none;
+            padding: 5px 10px; background-color: #333;
+            color: white; border-radius: 4px;
+            font-size: 0.8rem; white-space: nowrap;
+            z-index: 10; pointer-events: none;
+            transform: translate(-50%, calc(-100% - 5px));
+        }
+        
+        /* History Panel */
+        #history-panel {
+            position: fixed; top: 0; right: 0; width: 300px; height: 100%;
+            background-color: var(--history-bg); color: var(--history-text);
+            padding: 1rem;
+            box-shadow: -4px 0 12px rgba(0, 0, 0, 0.2);
+            transform: translateX(100%);
+            transition: transform 0.3s ease-in-out, background-color 0.3s;
+            z-index: 1000; box-sizing: border-box;
+        }
+        #history-panel.open { transform: translateX(0); }
+        #history-panel h2 {
+            border-bottom: 2px solid var(--secondary-color);
+            padding-bottom: 10px; margin-top: 0;
+        }
+        #history-search-bar {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 8px;
+            margin-bottom: 10px;
+            border: 1px solid var(--history-border);
+            background: var(--history-box-bg);
+            color: var(--history-text);
+            border-radius: 4px;
+        }
+        #history-content {
+            height: calc(100% - 160px);
+            overflow-y: auto;
+            list-style: none; padding: 0;
+        }
+        .highlight { font-weight: bold; color: var(--secondary-color); }
+        .game-session {
+            background: var(--history-box-bg); border-radius: 5px;
+            margin-bottom: 10px; border: 1px solid var(--history-border);
+        }
+        .game-session.locked summary { color: #999; }
+        .game-session summary {
+            padding: 10px; cursor: pointer; font-weight: bold;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .session-name {
+            display: inline-block; padding: 2px 5px;
+            border-radius: 3px; border: 1px solid transparent;
+        }
+        .session-name[contenteditable="true"] {
+            background: #fff; color: #333;
+            border: 1px solid var(--secondary-color); outline: none;
+        }
+        .session-controls { display: inline-flex; gap: 5px; }
+        .session-controls .btn {
+            font-size: 0.7rem; padding: 3px 5px; background: #666;
+        }
+        .session-controls .btn:hover { background: #888; }
+        .session-word-list {
+            list-style: none; padding: 0 10px 10px 10px;
+            background: var(--history-bg); max-height: 200px; overflow-y: auto;
+        }
+        .session-word-list li {
+            padding: 5px 0; border-bottom: 1px dotted var(--history-border);
+            display: flex; justify-content: space-between; align-items: center;
+            word-wrap: break-word; overflow-wrap: break-word; width: 100%;
+        }
+        .session-word-list li span { max-width: 80%; }
+        .history-word-info {
+            font-size: 0.8rem;
+            opacity: 0.7;
+            display: block;
+            margin-left: 10px;
+        }
+        .delete-word-btn {
+            background: none; border: none; color: #ff5252;
+            cursor: pointer; font-size: 1rem; padding: 0 5px;
+        }
+        .game-session.locked .delete-word-btn { display: none; }
+        .history-divider { margin: 15px 0; border-top: 1px solid #777; }
+        .history-item {
+            margin-bottom: 15px; padding-bottom: 5px;
+            border-bottom: 1px dotted var(--history-border); word-wrap: break-word;
+        }
+        
+        /* Softlock */
+        body.softlocked #header-bar > h1,
+        body.softlocked #utility-bar > .btn:not(#game-toggle-button),
+        body.softlocked #main-column .card:not(#results-container),
+        body.softlocked #sidebar-column {
+            display: none;
+        }
+        body.softlocked #main-column #results-container {
+            display: block;
+        }
+        body.softlocked #game-toggle-button {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            z-index: 2000;
+        }
+        
+        /* Stats & Define Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal {
+            background: var(--box-color);
+            color: var(--text-color);
+            padding: 1.5rem 2rem;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .modal h2 {
+            margin-top: 0;
+            color: var(--header-color);
+            border-bottom: 2px solid var(--secondary-color);
+            padding-bottom: 10px;
+        }
+        .stat-item {
+            font-size: 1.1rem;
+            margin: 10px 0;
+        }
+        .stat-item strong {
+            color: var(--primary-color);
+        }
+        #stats-chart {
+            display: flex;
+            align-items: flex-end;
+            height: 150px;
+            border-bottom: 2px solid var(--text-color);
+            padding-top: 10px;
+            margin-top: 20px;
+            gap: 2px;
+        }
+        .chart-bar {
+            flex-grow: 1;
+            background: var(--primary-color);
+            position: relative;
+        }
+        .chart-bar:hover {
+            background: var(--secondary-color);
+        }
+        .chart-bar .bar-label {
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.8rem;
+            color: var(--text-color);
+            display: none;
+        }
+        .chart-bar:hover .bar-label {
+            display: block;
+        }
+        
+        .modal-tab-nav {
+            display: flex;
+            gap: 5px;
+            border-bottom: 2px solid var(--history-border);
+            margin-bottom: 1rem;
+        }
+        .modal-tab {
+            padding: 8px 12px;
+            cursor: pointer;
+            background: none;
+            border: none;
+            color: var(--text-muted-color);
+            font-weight: 600;
+            font-size: 1rem;
+            border-bottom: 3px solid transparent;
+        }
+        .modal-tab.active {
+            color: var(--secondary-color);
+            border-bottom-color: var(--secondary-color);
+        }
+        .modal-tab-content {
+            display: none;
+        }
+        .modal-tab-content.active {
+            display: block;
+        }
+        #define-modal-body h3 {
+            color: var(--secondary-color);
+            margin-bottom: 5px;
+        }
+        #define-modal-body p {
+            margin-top: 0;
+            margin-bottom: 15px;
+        }
+        #define-modal-body em {
+            color: var(--text-muted-color);
+            font-style: italic;
+        }
+        #define-search-form {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 1rem;
+        }
+        #define-search-input {
+            font-size: 1rem; padding: 0.5rem; border: 1px solid var(--history-border);
+            border-radius: 8px; background-color: var(--input-bg-color);
+            color: var(--text-color); flex-grow: 1;
+        }
+        
+        /* --- Prompts/SubSearch Page CSS --- */
+        #prompts-page, #subsearch-page {
+            display: none; /* Hidden by default */
+            width: 100%;
+            margin-top: 0;
+        }
+        #prompts-header, #subsearch-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        #subsearch-form {
+            display: flex;
+            gap: 10px;
+            margin: 10px 0;
+        }
+        #subsearch-input {
+            font-size: 1rem; padding: 0.5rem; border: 1px solid var(--history-border);
+            border-radius: 8px; background-color: var(--input-bg-color);
+            color: var(--text-color);
+            width: 100px;
+        }
+        #prompts-list-container, #subsearch-results-list {
+            max-height: 70vh;
+            overflow-y: auto;
+            background: var(--bg-color);
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid var(--history-border);
+        }
+        .prompt-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 10px;
+            border-bottom: 1px solid var(--history-border);
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .prompt-item:hover {
+            background-color: var(--history-box-bg);
+        }
+        .prompt-name {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--secondary-color);
+        }
+        .prompt-info {
+            font-size: 0.9rem;
+            color: var(--text-muted-color);
+        }
+        .prompt-check {
+            font-size: 1.2rem;
+            color: var(--check-color);
+        }
+        
+        /* Responsive Layout */
+        @media (max-width: 900px) {
+            body {
+                grid-template-columns: 1fr;
+                grid-template-areas:
+                    "header"
+                    "main"
+                    "sidebar";
+            }
+            #sidebar-column {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 1.5rem;
+            }
+        }
+        @media (max-width: 600px) {
+            body { padding: 1rem; }
+            .card { padding: 1rem; }
+            #sidebar-column { grid-template-columns: 1fr; }
+            #history-panel { width: 90%; }
+            h1 { font-size: 1.8rem; }
+        }
+    </style>
 </head>
-
 <body class="dark-theme">
-    <!-- Top History Panel (Horizontal) -->
-    <div id="history-panel">
-        <h2>History <span id="history-count">(0)</span></h2>
-        <button class="panel-close-btn" id="close-history-btn">×</button>
-        <input type="text" id="history-search-bar" placeholder="Search history..." style="width: 100%; padding: 8px; margin-bottom: 10px; border-radius: 4px; border: 1px solid var(--history-border); background: var(--input-bg-color); color: var(--text-color);">
-        <div id="history-content"></div>
-    </div>
 
-    <!-- Header -->
     <div id="header-bar">
-        <div id="left-buttons">
-            <button id="unique-filter-btn" class="btn">Unique Filter</button>
-            <button id="sort-filter-btn" class="btn">Sort</button>
-            <button id="length-filter-btn" class="btn">Length</button>
-            <button id="caps-filter-btn" class="btn">Caps</button>
-            <button id="include-exclude-btn" class="btn">Include/Exclude</button>
-        </div>
-
-        <div id="search-form-container">
-            <form id="search-form">
-                <input type="text" id="search-input" placeholder="e.g., s_a_e" autocomplete="off" style="padding:8px;border-radius:6px;border:1px solid var(--history-border);background:var(--input-bg-color);color:var(--text-color);">
-                <button type="submit" id="search-button" class="btn">Find</button>
-            </form>
-        </div>
-
-        <div id="right-buttons">
-            <button id="game-toggle-button" class="btn">Start Game</button>
-            <button id="reset-button" class="btn">Reset Colors</button>
+        <h1>Word Finder</h1>
+        <div id="utility-bar">
+            <div id="utility-bar-left">
+                <button id="prompt-page-button" class="btn">Prompts 🔎</button>
+                <button id="subsearch-page-button" class="btn">Sub-Search #</button>
+                <button id="crazy-mode-button" class="btn">Crazy Mode 🤪</button> 
+            </div>
+            <button id="stats-button" class="btn">Stats 📊</button>
             <button id="theme-toggle-button" class="btn">Theme</button>
-            <button id="toggle-history-button" class="btn">History</button>
-            <button id="stats-button" class="btn">Stats</button>
-            <button id="prompt-page-button" class="btn">Prompts</button>
-            <button id="define-toggle-button" class="btn">Define</button>
-            <button id="crazy-mode-button" class="btn">Crazy Mode</button>
+            <button id="game-toggle-button" class="btn">Start Game</button>
+            <button id="softlock-button" class="btn" style="display: none;">Softlock</button>
+            <button id="define-toggle-button" class="btn">Define Word 📖</button>
+            <button id="reset-button" class="btn">Reset Colors</button>
+            <button id="toggle-history-button" class="btn">History (0)</button>
+        </div>
+    </div>
+    
+    <div id="main-column">
+        <div id="main-app">
+            <div class="card" id="search-card">
+                <form id="search-form">
+                    <div id="search-main">
+                        <input type="text" id="search-input" placeholder="e.g., s_a_e" required autocomplete="off">
+                        <button type="submit" id="search-button">Find</button>
+                    </div>
+                </form>
+            </div>
+            
+            <div id="loading-message">
+                Loading word files...
+            </div>
+            
+            <div class="card" id="results-container" style="display: none;"></div>
+        </div>
+        
+        <div id="prompts-page" class="card" style="display: none;">
+            <div id="prompts-header">
+                <h2>3-Letter Prompts</h2>
+                <div class="filter-group">
+                    <label for="prompt-sort">Sort by:</label>
+                    <select id="prompt-sort">
+                        <option value="count" selected>Word Count (High-Low)</option>
+                        <option value="alpha">Alphabetical (A-Z)</option>
+                    </select>
+                </div>
+                <button id="prompt-home-button" class="btn">Return Home</button>
+            </div>
+            <div id="prompts-list-container">
+                </div>
+        </div>
+        
+        <div id="subsearch-page" class="card" style="display: none;">
+            <div id="subsearch-header">
+                <h2>Prompt Sub-Search</h2>
+                <button id="subsearch-home-button" class="btn">Return Home</button>
+            </div>
+            <form id="subsearch-form">
+                <label for="subsearch-input">Find prompts with exactly this many words:</label>
+                <input type="number" id="subsearch-input" placeholder="e.g., 1" min="1" required>
+                <button type="submit" class="btn">Find</button>
+            </form>
+            <div id="subsearch-results-list">
+                </div>
+        </div>
+    </div>
+    
+    <div id="sidebar-column">
+        <div class="card" id="filter-grid-card">
+            <div id="filter-grid">
+                <div class="filter-group">
+                    <label for="unique-filter">Unique Filter:</label>
+                    <select id="unique-filter">
+                        <option value="none" selected>Standard Search</option>
+                        <option value="by-countries">By Countries</option>
+                        <option value="names">Names</option>
+                        <option value="word-bomb">Word-Bomb List</option>
+                        <option value="pattern">Pattern (_)</option>
+                        <option value="v-c-pattern">V/C Pattern (v/c)</option>
+                        <option value="anagram">Anagram</option>
+                        <option value="include-all">Include All Letters</option>
+                    </select>
+                </div>
+                
+                <div class="filter-group">
+                    <label for="search-filter">Sort By:</label>
+                    <select id="search-filter">
+                        <option value="none" selected>None (Shuffle)</option>
+                        <option value="starting">Starting With</option>
+                        <option value="ending">Ending With</option>
+                        <option value="common">Most Common</option>
+                        <option value="least-common">Least Common</option>
+                    </select>
+                </div>
+                
+                <div class="filter-group">
+                    <label for="length-filter">Length:</label>
+                    <select id="length-filter">
+                        <option value="any" selected>Any Length</option>
+                        <option value="longest">Longest</option>
+                        <option value="shortest">Shortest</option>
+                        </select>
+                </div>
+                
+                <div class="filter-group">
+                    <label for="cap-filter">Caps:</label>
+                    <select id="cap-filter">
+                        <option value="none" selected>None-Capped</option>
+                        <option value="all">All Capped</option>
+                        <option value="random-letter">Random Caps</option>
+                        <option value="random-mode">Random Mode</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card" id="filter-lists-container">
+            <div class="filter-list">
+                <h3>Include: <button type="button" id="add-include-button" class="btn add-btn">+</button></h3>
+                <div id="include-list-tags"></div>
+            </div>
+            <div class="filter-list">
+                <h3>Exclude: <button type="button" id="add-exclude-button" class="btn add-btn">+</button></h3>
+                <div id="exclude-list-tags"></div>
+            </div>
+        </div>
+    </div>
+    
+    <div id="word-tooltip" style="display: none;"></div>
+    
+    <div id="history-panel">
+        <h2 id="history-header">History (0)</h2>
+        <input type="text" id="history-search-bar" placeholder="Search history...">
+        <div id="history-content"></div>
+        <button id="close-history-button" class="btn" style="width: 100%; margin-top: 1rem;">Close</button>
+    </div>
+    
+    <div id="stats-modal-overlay" class="modal-overlay">
+        <div id="stats-modal" class="modal">
+            <h2>Dictionary Stats</h2>
+            <div class="stat-item">Total Words: <strong id="stat-total-words">0</strong></div>
+            <div class="stat-item">With Frequency Data: <strong id="stat-freq-words">0</strong></div>
+            <div class="stat-item">Average Length: <strong id="stat-avg-length">0</strong></div>
+            <h3>Word Lengths</h3>
+            <div id="stats-chart"></div>
+            
+            <h2 style="margin-top: 20px;">History Stats</h2>
+            <div class="stat-item">Total Words Copied: <strong id="stat-total-copied">0</strong></div>
+            <div class="stat-item">Game Sessions Played: <strong id="stat-game-sessions">0</strong></div>
+            <div class="stat-item">Avg. Words per Game: <strong id="stat-avg-words-game">0</strong></div>
+            
+            <button id="stats-close-button" class="btn" style="width: 100%; margin-top: 1.5rem;">Close</button>
+        </div>
+    </div>
+    
+    <div id="define-modal-overlay" class="modal-overlay">
+        <div id="define-modal" class="modal">
+            <h2 id="define-modal-title">Define Word</h2>
+            
+            <form id="define-search-form">
+                <input type="text" id="define-search-input" placeholder="Define any word..." required>
+                <button type="submit" class="btn">Define</button>
+            </form>
+            
+            <div class="modal-tab-nav">
+                <button class="modal-tab active" data-tab="summary">Summarize</button>
+                <button class="modal-tab" data-tab="full">Full</button>
+            </div>
+            
+            <div id="define-modal-body">
+                <div id="define-modal-summary" class="modal-tab-content active"></div>
+                <div id="define-modal-full" class="modal-tab-content"></div>
+            </div>
+            
+            <button id="define-close-button" class="btn" style="width: 100%; margin-top: 1.5rem;">Close</button>
         </div>
     </div>
 
-    <!-- Main Content -->
-    <div id="main-content">
-        <div id="loading-message">Loading word files...</div>
-        <div id="results-container" style="display: none;"></div>
-    </div>
-
-    <!-- Left Side Panel -->
-    <div id="left-panel" class="side-panel left">
-        <button class="panel-close-btn">×</button>
-        <div id="left-panel-content"></div>
-    </div>
-
-    <!-- Right Side Panel -->
-    <div id="right-panel" class="side-panel right">
-        <button class="panel-close-btn">×</button>
-        <div id="right-panel-content"></div>
-    </div>
-</body>
-
-<script>
-/* --- Combined original scripts (merged) --- */
-
+    <script>
         document.addEventListener('DOMContentLoaded', () => {
 
             // --- Element References ---
@@ -1652,284 +2279,6 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Robo
             loadState();
             loadAndProcessFile();
         });
-    
-
-/* --- New Panel management and injected behaviors from the user's block --- */
-/* Panel Management */
-function closeAllPanels() {
-    document.getElementById('left-panel').classList.remove('open');
-    document.getElementById('right-panel').classList.remove('open');
-    document.getElementById('history-panel').classList.remove('open');
-}
-
-function openLeftPanel(content) {
-    closeAllPanels();
-    document.getElementById('left-panel-content').innerHTML = content;
-    document.getElementById('left-panel').classList.add('open');
-}
-
-function openRightPanel(content) {
-    closeAllPanels();
-    document.getElementById('right-panel-content').innerHTML = content;
-    document.getElementById('right-panel').classList.add('open');
-}
-
-function determinePanelSide(buttonElement) {
-    const buttonRect = buttonElement.getBoundingClientRect();
-    const screenCenter = window.innerWidth / 2;
-    return buttonRect.left < screenCenter ? 'left' : 'right';
-}
-
-// Close button listeners
-document.addEventListener('DOMContentLoaded', () => {
-    document.querySelectorAll('.panel-close-btn').forEach(btn => {
-        btn.addEventListener('click', closeAllPanels);
-    });
-
-    // Unique Filter Button
-    document.getElementById('unique-filter-btn').addEventListener('click', function() {
-        const content = `
-            <h2>Unique Filter</h2>
-            <button class="option-btn" data-value="none">Standard Search</button>
-            <button class="option-btn" data-value="by-countries">By Countries</button>
-            <button class="option-btn" data-value="names">Names</button>
-            <button class="option-btn" data-value="word-bomb">Word-Bomb List</button>
-            <button class="option-btn" data-value="pattern">Pattern (_)</button>
-            <button class="option-btn" data-value="v-c-pattern">V/C Pattern (v/c)</button>
-            <button class="option-btn" data-value="anagram">Anagram</button>
-            <button class="option-btn" data-value="include-all">Include All Letters</button>
-        `;
-
-        const side = determinePanelSide(this);
-        if (side === 'left') openLeftPanel(content);
-        else openRightPanel(content);
-
-        // delegate events (panels created dynamically)
-        setTimeout(() => {
-            document.querySelectorAll('.option-btn').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    if(window.uniqueFilter) {
-                        window.uniqueFilter.value = btn.dataset.value;
-                    }
-                    closeAllPanels();
-                });
-            });
-        }, 50);
-    });
-
-    // Sort Filter Button
-    document.getElementById('sort-filter-btn').addEventListener('click', function() {
-        const content = `
-            <h2>Sort By</h2>
-            <button class="option-btn" data-value="none">None (Shuffle)</button>
-            <button class="option-btn" data-value="starting">Starting With</button>
-            <button class="option-btn" data-value="ending">Ending With</button>
-            <button class="option-btn" data-value="common">Most Common</button>
-            <button class="option-btn" data-value="least-common">Least Common</button>
-        `;
-
-        const side = determinePanelSide(this);
-        if (side === 'left') openLeftPanel(content);
-        else openRightPanel(content);
-
-        setTimeout(() => {
-            document.querySelectorAll('.option-btn').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    if(window.searchFilter) {
-                        window.searchFilter.value = btn.dataset.value;
-                    }
-                    closeAllPanels();
-                });
-            });
-        }, 50);
-    });
-
-    // Length Filter Button with all operators
-    document.getElementById('length-filter-btn').addEventListener('click', function() {
-        const content = `
-            <h2>Length Filter</h2>
-            <input type="number" id="length-input" placeholder="Enter number" min="1">
-            <div class="length-btn-grid">
-                <button class="option-btn" data-op="<">x &lt;</button>
-                <button class="option-btn" data-op="<=">x ≤</button>
-                <button class="option-btn" data-op=">">x &gt;</button>
-                <button class="option-btn" data-op=">=">x ≥</button>
-                <button class="option-btn" data-op="=">x =</button>
-                <button class="option-btn" data-op="!=">x ≠</button>
-            </div>
-            <button class="option-btn" data-op="range">&lt;x&lt;</button>
-            <div id="range-input-container">
-                <input type="number" id="range-min" placeholder="Min" min="1">
-                <span>&lt; x &lt;</span>
-                <input type="number" id="range-max" placeholder="Max" min="1">
-                <button class="btn" id="apply-range-btn">Apply</button>
-            </div>
-            <hr style="margin: 15px 0; border-color: var(--history-border);">
-            <button class="option-btn" data-value="longest">Longest</button>
-            <button class="option-btn" data-value="shortest">Shortest</button>
-            <button class="option-btn" data-value="random">Random</button>
-            <button class="option-btn" data-value="any">Any Length</button>
-        `;
-
-        const side = determinePanelSide(this);
-        if (side === 'left') openLeftPanel(content);
-        else openRightPanel(content);
-
-        setTimeout(() => {
-            document.querySelectorAll('.option-btn[data-op]').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    const op = btn.dataset.op;
-                    if (op === 'range') {
-                        document.getElementById('range-input-container').classList.add('active');
-                    } else {
-                        const value = document.getElementById('length-input').value;
-                        if (value) {
-                            if(window.lengthFilter) {
-                                window.lengthFilter.value = op + value;
-                            }
-                            closeAllPanels();
-                        }
-                    }
-                });
-            });
-
-            document.getElementById('apply-range-btn')?.addEventListener('click', () => {
-                const min = document.getElementById('range-min').value;
-                const max = document.getElementById('range-max').value;
-                if (min && max && parseInt(min) < parseInt(max)) {
-                    if(window.lengthFilter) {
-                        window.lengthFilter.value = `${min}<x<${max}`;
-                    }
-                    closeAllPanels();
-                }
-            });
-
-            document.querySelectorAll('.option-btn[data-value]').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    if(window.lengthFilter) {
-                        window.lengthFilter.value = btn.dataset.value;
-                    }
-                    closeAllPanels();
-                });
-            });
-        }, 50);
-    });
-
-    // Caps Filter Button
-    document.getElementById('caps-filter-btn').addEventListener('click', function() {
-        const content = `
-            <h2>Capitalization</h2>
-            <button class="option-btn" data-value="none">None-Capped</button>
-            <button class="option-btn" data-value="all">All Capped</button>
-            <button class="option-btn" data-value="random-letter">Random Caps</button>
-            <button class="option-btn" data-value="random-mode">Random Mode</button>
-        `;
-
-        const side = determinePanelSide(this);
-        if (side === 'left') openLeftPanel(content);
-        else openRightPanel(content);
-
-        setTimeout(() => {
-            document.querySelectorAll('.option-btn').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    if(window.capFilter) {
-                        window.capFilter.value = btn.dataset.value;
-                    }
-                    closeAllPanels();
-                });
-            });
-        }, 50);
-    });
-
-    // Include/Exclude Button
-    document.getElementById('include-exclude-btn').addEventListener('click', function() {
-        const content = `
-            <h2>Include/Exclude</h2>
-            <div style="margin-bottom: 20px;">
-                <label>Add to Search:</label>
-                <div style="display: flex; gap: 5px; margin-top: 5px;">
-                    <input type="text" id="add-filter-input" placeholder="Enter text" style="flex: 1; padding: 8px; border-radius: 4px; border: 1px solid var(--history-border); background: var(--input-bg-color); color: var(--text-color);">
-                    <button class="btn" id="add-include-btn-panel" style="background: var(--include-color);">Include</button>
-                    <button class="btn" id="add-exclude-btn-panel" style="background: var(--exclude-color);">Exclude</button>
-                </div>
-            </div>
-            <div class="filter-tags-container">
-                <h3>Include:</h3>
-                <div id="include-tags-panel"></div>
-            </div>
-            <div class="filter-tags-container">
-                <h3>Exclude:</h3>
-                <div id="exclude-tags-panel"></div>
-            </div>
-        `;
-
-        const side = determinePanelSide(this);
-        if (side === 'left') openLeftPanel(content);
-        else openRightPanel(content);
-
-        setTimeout(() => {
-            // render existing lists if available
-            function renderIncludeExcludeTagsInPanelLocal() {
-                const includeContainer = document.getElementById('include-tags-panel');
-                const excludeContainer = document.getElementById('exclude-tags-panel');
-                if (!includeContainer || !excludeContainer) return;
-                const incList = window.permanentIncludeList || [];
-                const excList = window.permanentExcludeList || [];
-                includeContainer.innerHTML = incList.map(item => `<span class="filter-tag filter-tag-include">${item}<button class="remove-tag-btn" data-list="include" data-item="${item}">×</button></span>`).join('');
-                excludeContainer.innerHTML = excList.map(item => `<span class="filter-tag filter-tag-exclude">${item}<button class="remove-tag-btn" data-list="exclude" data-item="${item}">×</button></span>`).join('');
-                document.querySelectorAll('.remove-tag-btn').forEach(btn => {
-                    btn.addEventListener('click', () => {
-                        const list = btn.dataset.list;
-                        const item = btn.dataset.item;
-                        if (list === 'include') {
-                            window.permanentIncludeList = (window.permanentIncludeList || []).filter(i => i !== item);
-                        } else {
-                            window.permanentExcludeList = (window.permanentExcludeList || []).filter(i => i !== item);
-                        }
-                        renderIncludeExcludeTagsInPanelLocal();
-                        if(window.saveState) window.saveState();
-                    });
-                });
-            }
-            renderIncludeExcludeTagsInPanelLocal();
-
-            document.getElementById('add-include-btn-panel').addEventListener('click', () => {
-                const input = document.getElementById('add-filter-input');
-                const value = input.value.trim().toLowerCase();
-                if (value) {
-                    window.permanentIncludeList = window.permanentIncludeList || [];
-                    if (!window.permanentIncludeList.includes(value)) {
-                        window.permanentIncludeList.push(value);
-                    }
-                    input.value = '';
-                    renderIncludeExcludeTagsInPanelLocal();
-                    if(window.saveState) window.saveState();
-                }
-            });
-            document.getElementById('add-exclude-btn-panel').addEventListener('click', () => {
-                const input = document.getElementById('add-filter-input');
-                const value = input.value.trim().toLowerCase();
-                if (value) {
-                    window.permanentExcludeList = window.permanentExcludeList || [];
-                    if (!window.permanentExcludeList.includes(value)) {
-                        window.permanentExcludeList.push(value);
-                    }
-                    input.value = '';
-                    renderIncludeExcludeTagsInPanelLocal();
-                    if(window.saveState) window.saveState();
-                }
-            });
-        }, 50);
-    });
-
-    // history toggle
-    document.getElementById('toggle-history-button').addEventListener('click', () => {
-        document.getElementById('history-panel').classList.toggle('open');
-    });
-    document.getElementById('close-history-btn').addEventListener('click', () => {
-        document.getElementById('history-panel').classList.remove('open');
-    });
-
-});
-</script>
+    </script>
+</body>
 </html>
