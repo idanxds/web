@@ -1,56 +1,2579 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <!-- 
-      This is an HTML comment
-      You can write text in a comment and the content won't be visible in the page
-    -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Word Finder</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            /* Dark Theme (Default) */
+            --bg-color: #1a1c2c; --box-color: #252a41; --input-bg-color: #3b4262;
+            --text-color: #e0e0e0; --text-muted-color: #9ab; --header-color: #ffffff;
+            --primary-color: #00bcd4; --secondary-color: #0097a7;
+            --history-bg: #1e2236; --history-box-bg: #2f3653; --history-border: #3b4262;
+            
+            --copied-color-start: #84ffff; --copied-color-end: #00e5ff;
+            
+            --game-mode-color: #ffc107; --reset-color: #ff5252;
+            --include-color: #3498db; --exclude-color: #e74c3c;
+            --bomb-selected-color: #2ecc71; --check-color: #2ecc71;
+            --define-color: #9b59b6;
+        }
+        
+        body.light-theme {
+            --bg-color: #f4f7f6; --box-color: #ffffff; --input-bg-color: #ffffff;
+            --text-color: #333; --text-muted-color: #777; --header-color: #1a535c;
+            --primary-color: #1a535c; --secondary-color: #4ecdc4;
+            --history-bg: #333; --history-text: #fff;
+            --history-box-bg: #444; --history-border: #555;
+        }
+        
+        body.retro-theme {
+            --bg-color: #000000; --box-color: #0d0d0d; --input-bg-color: #222;
+            --text-color: #00FF00; --text-muted-color: #00FF00;
+            --header-color: #00FF00; --primary-color: #00FF00;
+            --secondary-color: #00FF00; --history-bg: #0a0a0a;
+            --history-box-bg: #1a1a1a; --history-border: #333;
+            --copied-color-start: #00e5ff; --copied-color-end: #84ffff;
+            --game-mode-color: #FFFF00; --reset-color: #FF0000;
+            --include-color: #0000FF; --exclude-color: #FF0000;
+            --bomb-selected-color: #00FF00; --check-color: #00FF00;
+            font-family: 'Courier New', Courier, monospace;
+        }
 
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="icon" href="https://glitch.com/favicon.ico" />
+        /* --- Rebranded Layout --- */
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-color); color: var(--text-color);
+            margin: 0; padding: 2rem;
+            transition: background-color 0.3s, color 0.3s;
+            display: grid;
+            grid-template-columns: 280px 1fr 280px; /* Left-Panel | Main | Right-Panel */
+            grid-template-rows: auto 1fr; /* Header | Content */
+            grid-template-areas: 
+                "header header header"
+                "sidebar-left main sidebar-right";
+            gap: 1.5rem;
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+        
+        #header-bar {
+            grid-area: header;
+            display: flex;
+            justify-content: space-between; /* FIX: Use space-between */
+            align-items: center;
+            width: 100%;
+            gap: 1rem; /* Add spacing */
+        }
+        
+        h1 { 
+            color: var(--header-color); 
+            font-weight: 700; 
+            margin: 0;
+            text-align: center;
+            flex-shrink: 0; /* Don't let h1 shrink */
+        }
+        
+        #utility-bar-left, #utility-bar-right {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        #utility-bar-left {
+            justify-content: flex-start;
+        }
+        #utility-bar-right {
+            justify-content: flex-end;
+        }
 
-  <!--
-      This is the page head - it contains info the browser uses
-      Like the title, which appears on the browser tab but not inside the page
-      Further down you'll see the content that displays in the page
-    -->
-  <title>Hello World!</title>
+        
+        #main-column {
+            grid-area: main;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            min-width: 0; /* Fix for flexbox overflow */
+        }
+        
+        #sidebar-left, #sidebar-right {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            min-width: 0;
+        }
+        #sidebar-left { grid-area: sidebar-left; }
+        #sidebar-right { grid-area: sidebar-right; }
+        
+        .card {
+            background: var(--box-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            box-sizing: border-box;
+            transition: background-color 0.3s;
+        }
+        
+        /* Search Form */
+        #search-form {
+            display: flex;
+            gap: 10px;
+        }
+        #search-input {
+            font-size: 1rem; padding: 0.75rem; border: 1px solid var(--history-border);
+            border-radius: 8px; background-color: var(--input-bg-color);
+            color: var(--text-color); flex-grow: 1;
+        }
+        #search-button { font-weight: 600; padding: 0.75rem 1rem; }
+        
+        /* --- New Filter Panel --- */
+        .filter-panel {
+            display: none; /* Hidden by default */
+            position: fixed;
+            top: 0;
+            width: 300px;
+            height: 100%;
+            background: var(--history-bg);
+            color: var(--history-text);
+            padding: 1.5rem;
+            box-shadow: 0 0 20px rgba(0,0,0,0.3);
+            z-index: 1000;
+            box-sizing: border-box;
+            overflow-y: auto;
+            transition: transform 0.3s ease-in-out;
+        }
+        .filter-panel.left {
+            left: 0;
+            transform: translateX(-100%);
+        }
+        .filter-panel.right {
+            right: 0;
+            transform: translateX(100%);
+        }
+        .filter-panel.open {
+            transform: translateX(0);
+        }
+        .filter-panel h2 {
+            margin-top: 0;
+            border-bottom: 2px solid var(--secondary-color);
+            padding-bottom: 10px;
+        }
+        .filter-button-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .filter-button-group .btn {
+            background-color: var(--history-box-bg);
+            border: 1px solid var(--history-border);
+        }
+        .filter-button-group .btn.active {
+            background-color: var(--primary-color);
+            border-color: var(--secondary-color);
+            color: white;
+        }
+        
+        /* --- New Length Panel --- */
+        #length-panel-inputs {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin: 15px 0;
+        }
+        #length-panel-inputs .length-input-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        #length-panel-inputs input[type="number"] {
+            width: 60px;
+            font-size: 1rem;
+            padding: 0.5rem;
+            border: 1px solid var(--history-border);
+            border-radius: 8px;
+            background-color: var(--input-bg-color);
+            color: var(--history-text);
+        }
+        #length-filter-display {
+            margin-top: 15px;
+            font-style: italic;
+            color: var(--text-muted-color);
+            background: var(--box-color);
+            padding: 10px;
+            border-radius: 8px;
+            min-height: 20px;
+        }
+        
+        button, .btn {
+            font-size: 0.9rem; padding: 0.6rem 0.8rem; border: none;
+            border-radius: 4px; background-color: var(--primary-color);
+            color: white; cursor: pointer;
+            transition: background-color 0.2s; white-space: nowrap;
+        }
+        button:hover, .btn:hover { background-color: var(--secondary-color); }
+        
+        .add-btn { padding: 3px 8px; font-size: 1rem; line-height: 1; }
+        #add-include-button { background-color: var(--include-color); }
+        #add-exclude-button { background-color: var(--exclude-color); }
+        #softlock-button { background-color: #9b59b6; }
+        
+        #define-toggle-button.active, #crazy-mode-button.active {
+            background-color: var(--define-color);
+            animation: pulse-define 1.5s infinite;
+        }
+        
+        #game-toggle-button.game-active {
+            background-color: var(--game-mode-color);
+            color: #333;
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(255, 193, 7, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 193, 7, 0); }
+        }
+        @keyframes pulse-define {
+            0% { box-shadow: 0 0 0 0 rgba(155, 89, 182, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(155, 89, 182, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(155, 89, 182, 0); }
+        }
+        #loading-message { font-style: italic; color: var(--text-muted-color); }
+        
+        /* Include/Exclude Tags */
+        .filter-list h3 {
+            margin-top: 0; margin-bottom: 10px; font-size: 1rem;
+            color: var(--text-color); display: flex;
+            justify-content: space-between; align-items: center;
+            border-bottom: 2px solid var(--history-border);
+            padding-bottom: 8px;
+        }
+        #include-list-tags, #exclude-list-tags {
+            display: flex; flex-wrap: wrap;
+            gap: 5px; min-height: 30px;
+        }
+        .filter-tag {
+            display: inline-flex; align-items: center;
+            padding: 5px 10px; border-radius: 15px;
+            font-size: 0.9rem; font-weight: 500;
+        }
+        .filter-tag-include { background-color: var(--include-color); color: white; }
+        .filter-tag-exclude { background-color: var(--exclude-color); color: white; }
+        .remove-tag-btn {
+            background: none; border: none;
+            color: white; font-weight: bold;
+            font-size: 1.1rem; margin-left: 5px;
+            cursor: pointer; padding: 0 5px;
+        }
 
-  <!-- The website stylesheet -->
-  <link rel="stylesheet" href="/style.css" />
-
-  <!-- The website JavaScript file -->
-  <script src="/script.js" defer></script>
+        /* Results Container */
+        #results-container { 
+            text-align: center; 
+            margin-top: 0;
+            flex-grow: 1;
+            overflow-y: auto;
+            max-height: none; /* Let it fill space */
+        }
+        #results-summary {
+            font-style: italic;
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+            color: var(--text-muted-color);
+        }
+        .word-item {
+            display: inline-block; padding: 0.3rem 0.6rem; margin: 0.2rem;
+            background-color: var(--word-bg-color); color: var(--word-text-color);
+            border-radius: 4px; cursor: pointer;
+            transition: all 0.2s;
+            vertical-align: top; position: relative;
+        }
+        .word-item:hover {
+            background: linear-gradient(135deg, var(--copied-color-start), var(--copied-color-end));
+            color: #111;
+            transform: translateY(-2px);
+        }
+        .word-item.copied {
+            background: linear-gradient(135deg, var(--copied-color-start), var(--copied-color-end));
+            color: #111; font-weight: bold;
+        }
+        .word-item.word-bomb-selected {
+            background: var(--bomb-selected-color);
+            color: #111;
+            font-weight: bold;
+        }
+        .tts-icon {
+            font-size: 0.8em;
+            margin-left: 4px;
+            opacity: 0.5;
+            transition: opacity 0.2s;
+            cursor: pointer;
+        }
+        .word-item:hover .tts-icon { opacity: 1; }
+        
+        #word-tooltip {
+            position: absolute; display: none;
+            padding: 5px 10px; background-color: #333;
+            color: white; border-radius: 4px;
+            font-size: 0.8rem; white-space: nowrap;
+            z-index: 10; pointer-events: none;
+            transform: translate(-50%, calc(-100% - 5px));
+        }
+        
+        /* History Panel */
+        #history-panel {
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: auto;
+            max-height: 40vh;
+            background-color: var(--history-bg); 
+            color: var(--history-text);
+            padding: 1.5rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            transform: translateY(-100%);
+            transition: transform 0.3s ease-in-out, background-color 0.3s;
+            z-index: 1000; 
+            box-sizing: border-box;
+        }
+        #history-panel.open { 
+            transform: translateY(0); 
+        }
+        #history-panel h2 {
+            border-bottom: 2px solid var(--secondary-color);
+            padding-bottom: 10px; margin-top: 0;
+        }
+        #history-search-bar {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 8px;
+            margin-bottom: 10px;
+            border: 1px solid var(--history-border);
+            background: var(--history-box-bg);
+            color: var(--history-text);
+            border-radius: 4px;
+        }
+        #history-content {
+            height: auto;
+            max-height: 25vh;
+            overflow-y: auto;
+            list-style: none; padding: 0;
+        }
+        .highlight { font-weight: bold; color: var(--secondary-color); }
+        .game-session {
+            background: var(--history-box-bg); border-radius: 5px;
+            margin-bottom: 10px; border: 1px solid var(--history-border);
+        }
+        .game-session.locked summary { color: #999; }
+        .game-session summary {
+            padding: 10px; cursor: pointer; font-weight: bold;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .session-name {
+            display: inline-block; padding: 2px 5px;
+            border-radius: 3px; border: 1px solid transparent;
+        }
+        .session-name[contenteditable="true"] {
+            background: #fff; color: #333;
+            border: 1px solid var(--secondary-color); outline: none;
+        }
+        .session-controls { display: inline-flex; gap: 5px; }
+        .session-controls .btn {
+            font-size: 0.7rem; padding: 3px 5px; background: #666;
+        }
+        .session-controls .btn:hover { background: #888; }
+        .session-word-list {
+            list-style: none; padding: 0 10px 10px 10px;
+            background: var(--history-bg); max-height: 200px; overflow-y: auto;
+        }
+        .session-word-list li {
+            padding: 5px 0; border-bottom: 1px dotted var(--history-border);
+            display: flex; justify-content: space-between; align-items: center;
+            word-wrap: break-word; overflow-wrap: break-word; width: 100%;
+        }
+        .session-word-list li span { max-width: 80%; }
+        .history-word-info {
+            font-size: 0.8rem;
+            opacity: 0.7;
+            display: block;
+            margin-left: 10px;
+        }
+        .delete-word-btn {
+            background: none; border: none; color: #ff5252;
+            cursor: pointer; font-size: 1rem; padding: 0 5px;
+        }
+        .game-session.locked .delete-word-btn { display: none; }
+        .history-divider { margin: 15px 0; border-top: 1px solid #777; }
+        .history-item {
+            margin-bottom: 15px; padding-bottom: 5px;
+            border-bottom: 1px dotted var(--history-border); word-wrap: break-word;
+        }
+        
+        /* Softlock */
+        body.softlocked #header-bar > h1,
+        body.softlocked #utility-bar-left,
+        body.softlocked #utility-bar-right > .btn:not(#game-toggle-button),
+        body.softlocked #main-column .card:not(#results-container),
+        body.softlocked #sidebar-left,
+        body.softlocked #sidebar-right {
+            display: none;
+        }
+        body.softlocked #main-column #results-container {
+            display: block;
+        }
+        body.softlocked #game-toggle-button {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            z-index: 2000;
+        }
+        
+        /* Stats & Define Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal {
+            background: var(--box-color);
+            color: var(--text-color);
+            padding: 1.5rem 2rem;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .modal h2 {
+            margin-top: 0;
+            color: var(--header-color);
+            border-bottom: 2px solid var(--secondary-color);
+            padding-bottom: 10px;
+        }
+        .stat-item {
+            font-size: 1.1rem;
+            margin: 10px 0;
+        }
+        .stat-item strong {
+            color: var(--primary-color);
+        }
+        #stats-chart {
+            display: flex;
+            align-items: flex-end;
+            height: 150px;
+            border-bottom: 2px solid var(--text-color);
+            padding-top: 10px;
+            margin-top: 20px;
+            gap: 2px;
+        }
+        .chart-bar {
+            flex-grow: 1;
+            background: var(--primary-color);
+            position: relative;
+        }
+        .chart-bar:hover {
+            background: var(--secondary-color);
+        }
+        .chart-bar .bar-label {
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.8rem;
+            color: var(--text-color);
+            display: none;
+        }
+        .chart-bar:hover .bar-label {
+            display: block;
+        }
+        
+        .modal-tab-nav {
+            display: flex;
+            gap: 5px;
+            border-bottom: 2px solid var(--history-border);
+            margin-bottom: 1rem;
+        }
+        .modal-tab {
+            padding: 8px 12px;
+            cursor: pointer;
+            background: none;
+            border: none;
+            color: var(--text-muted-color);
+            font-weight: 600;
+            font-size: 1rem;
+            border-bottom: 3px solid transparent;
+        }
+        .modal-tab.active {
+            color: var(--secondary-color);
+            border-bottom-color: var(--secondary-color);
+        }
+        .modal-tab-content {
+            display: none;
+        }
+        .modal-tab-content.active {
+            display: block;
+        }
+        #define-modal-body h3 {
+            color: var(--secondary-color);
+            margin-bottom: 5px;
+        }
+        #define-modal-body p {
+            margin-top: 0;
+            margin-bottom: 15px;
+        }
+        #define-modal-body em {
+            color: var(--text-muted-color);
+            font-style: italic;
+        }
+        #define-search-form {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 1rem;
+        }
+        #define-search-input {
+            font-size: 1rem; padding: 0.5rem; border: 1px solid var(--history-border);
+            border-radius: 8px; background-color: var(--input-bg-color);
+            color: var(--text-color); flex-grow: 1;
+        }
+        
+        /* --- Prompts/SubSearch Page CSS --- */
+        #prompts-page, #subsearch-page {
+            display: none; /* Hidden by default */
+            width: 100%;
+            margin-top: 0;
+        }
+        #prompts-header, #subsearch-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        #subsearch-form {
+            display: flex;
+            gap: 10px;
+            margin: 10px 0;
+        }
+        #subsearch-input {
+            font-size: 1rem; padding: 0.5rem; border: 1px solid var(--history-border);
+            border-radius: 8px; background-color: var(--input-bg-color);
+            color: var(--text-color);
+            width: 100px;
+        }
+        #prompts-list-container, #subsearch-results-list {
+            max-height: 70vh;
+            overflow-y: auto;
+            background: var(--bg-color);
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid var(--history-border);
+        }
+        .prompt-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 10px;
+            border-bottom: 1px solid var(--history-border);
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .prompt-item:hover {
+            background-color: var(--history-box-bg);
+        }
+        .prompt-name {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--secondary-color);
+        }
+        .prompt-info {
+            font-size: 0.9rem;
+            color: var(--text-muted-color);
+        }
+        .prompt-check {
+            font-size: 1.2rem;
+            color: var(--check-color);
+        }
+        
+        /* Responsive Layout */
+        @media (max-width: 900px) {
+            body {
+                grid-template-columns: 1fr;
+                grid-template-areas:
+                    "header"
+                    "main"
+                    "sidebar-left"
+                    "sidebar-right";
+            }
+            #sidebar-left, #sidebar-right {
+                grid-area: auto; /* Reset grid area */
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 1.5rem;
+            }
+        }
+        @media (max-width: 600px) {
+            body { 
+                padding: 1rem;
+                grid-template-columns: 1fr;
+                grid-template-areas:
+                    "header"
+                    "main"
+                    "sidebar-left"
+                    "sidebar-right";
+            }
+            #header-bar {
+                flex-direction: column;
+                gap: 1rem;
+            }
+            #utility-bar-left, #utility-bar-right {
+                position: static; 
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            .card { padding: 1rem; }
+            #sidebar-left, #sidebar-right { 
+                grid-template-columns: 1fr; 
+            }
+            #history-panel { width: 90%; }
+            h1 { font-size: 1.8rem; }
+        }
+    </style>
 </head>
+<body class="dark-theme">
 
-<body>
-  <!--
-      The body includes the content you see in the page
-      Each element is defined using tags, like this <div></div>
-      The attributes like class="wrapper" let us style elements in the CSS
-    -->
-  <div class="wrapper">
-    <div class="content" role="main">
-      <h1 class="title">Oh hi website!</h1>
-      <img src="/cool-website.svg" class="illustration" alt="cool website" />
-      <div class="instructions">
-        <p>
-          Fork <a href="https://github.com/glitchdotcom/website-to-compute">this project</a> and open it in a GitHub Codespace.
-        </p>
-        <p> Follow the steps in the README to deploy your new website to Fastly in a few steps!
-        </p>
-
-      </div>
-
-      <footer class="footer">
-        <div>
-          <a class="remix" href="https://github.com/glitchdotcom/website-to-compute">🚧 Get your own site</a>
+    <div id="header-bar">
+        <div id="utility-bar-left">
+            <button id="prompt-page-button" class="btn">Prompts 🔎</button>
+            <button id="subsearch-page-button" class="btn">Sub-Search #</button>
+            <button id="crazy-mode-button" class="btn">Crazy Mode 🤪</button> 
         </div>
-      </footer>
+        <h1>Word Finder</h1>
+        <div id="utility-bar-right">
+            <button id="stats-button" class="btn">Stats 📊</button>
+            <button id="theme-toggle-button" class="btn">Theme</button>
+            <button id="game-toggle-button" class="btn">Start Game</button>
+            <button id="softlock-button" class="btn" style="display: none;">Softlock</button>
+            <button id="define-toggle-button" class="btn">Define Word 📖</button>
+            <button id="reset-button" class="btn">Reset Colors</button>
+            <button id="toggle-history-button" class="btn">History (0)</button>
+        </div>
     </div>
-  </div>
-</body>
+    
+    <div id="main-column">
+        <div id="main-app">
+            <div class="card" id="search-card">
+                <form id="search-form">
+                    <div id="search-main">
+                        <input type="text" id="search-input" placeholder="e.g., s_a_e" required autocomplete="off">
+                        <button type="submit" id="search-button">Find</button>
+                    </div>
+                </form>
+            </div>
+            
+            <div id="loading-message">
+                Loading word files...
+            </div>
+            
+            <div class="card" id="results-container" style="display: none;"></div>
+        </div>
+        
+        <div id="prompts-page" class="card" style="display: none;">
+            <div id="prompts-header">
+                <h2>3-Letter Prompts</h2>
+                <div class="filter-group">
+                    <label for="prompt-sort">Sort by:</label>
+                    <select id="prompt-sort">
+                        <option value="count" selected>Word Count (High-Low)</option>
+                        <option value="alpha">Alphabetical (A-Z)</option>
+                    </select>
+                </div>
+                <button id="prompt-home-button" class="btn">Return Home</button>
+            </div>
+            <div id="prompts-list-container">
+                </div>
+        </div>
+        
+        <div id="subsearch-page" class="card" style="display: none;">
+            <div id="subsearch-header">
+                <h2>Prompt Sub-Search</h2>
+                <button id="subsearch-home-button" class="btn">Return Home</button>
+            </div>
+            <form id="subsearch-form">
+                <label for="subsearch-input">Find prompts with exactly this many words:</label>
+                <input type="number" id="subsearch-input" placeholder="e.g., 1" min="1" required>
+                <button type="submit" class="btn">Find</button>
+            </form>
+            <div id="subsearch-results-list">
+                </div>
+        </div>
+    </div>
+    
+    <div id="sidebar-left">
+        <button class="btn filter-panel-toggle" data-panel="unique-filter-panel">Unique Filter</button>
+        <button class="btn filter-panel-toggle" data-panel="sort-filter-panel">Sort By</button>
+        <button class="btn filter-panel-toggle" data-panel="length-filter-panel">Length</button>
+    </div>
+    
+    <div id="sidebar-right">
+        <button class="btn filter-panel-toggle" data-panel="cap-filter-panel">Caps</button>
+        <button class="btn filter-panel-toggle" data-panel="include-filter-panel">Include</button>
+        <button class="btn filter-panel-toggle" data-panel="exclude-filter-panel">Exclude</button>
+    </div>
+    
+    <div id="unique-filter-panel" class="filter-panel left">
+        <h2>Unique Filter</h2>
+        <div id="unique-filter-buttons" class="filter-button-group">
+            <button class="btn active" data-value="none">Standard Search</button>
+            <button class="btn" data-value="by-countries">By Countries</button>
+            <button class="btn" data-value="names">Names</button>
+            <button class="btn" data-value="word-bomb">Word-Bomb List</button>
+            <button class="btn" data-value="pattern">Pattern (_)</button>
+            <button class="btn" data-value="v-c-pattern">V/C Pattern (v/c)</button>
+            <button class="btn" data-value="anagram">Anagram</button>
+            <button class="btn" data-value="include-all">Include All Letters</button>
+        </div>
+    </div>
+    
+    <div id="sort-filter-panel" class="filter-panel left">
+        <h2>Sort By</h2>
+        <div id="sort-filter-buttons" class="filter-button-group">
+            <button class="btn active" data-value="none">None (Shuffle)</button>
+            <button class="btn" data-value="starting">Starting With</button>
+            <button class="btn" data-value="ending">Ending With</button>
+            <button class="btn" data-value="common">Most Common</button>
+            <button class="btn" data-value="least-common">Least Common</button>
+        </div>
+    </div>
 
+    <div id="length-filter-panel" class="filter-panel left">
+        <h2>Length</h2>
+        <div id="length-filter-display" style="font-style: italic; color: var(--text-muted-color); margin-bottom: 1rem;">Current: Any Length</div>
+        
+        <div class="filter-group">
+            <label for="length-input-x">Enter Length (x):</label>
+            <input type="number" id="length-input-x" placeholder="x" min="1" style="width: 100%; box-sizing: border-box; font-size: 1rem; padding: 0.5rem; border: 1px solid var(--history-border); border-radius: 8px; background-color: var(--input-bg-color); color: var(--history-text);">
+        </div>
+        
+        <div class="filter-button-group" id="length-mode-buttons-single" style="margin-top: 10px;">
+            <button class="btn" data-mode="equal">x =</button>
+            <button class="btn" data-mode="notEqual">x &ne;</button>
+            <button class="btn" data-mode="lessThan">x &lt;</button>
+            <button class="btn" data-mode="lessOrEqual">x &le;</button>
+            <button class="btn" data-mode="greaterThan">x &gt;</button>
+            <button class="btn" data-mode="greaterOrEqual">x &ge;</button>
+        </div>
+
+        <h3 style="margin-top: 1.5rem;">Range</h3>
+        <div class="filter-group" style="display: flex; flex-direction: row; gap: 10px; align-items: center;">
+            <input type="number" id="length-min-input" placeholder="Min" min="1" style="width: 80px; box-sizing: border-box; font-size: 1rem; padding: 0.5rem; border: 1px solid var(--history-border); border-radius: 8px; background-color: var(--input-bg-color); color: var(--history-text);">
+            <span style="font-size: 1.2rem;">&le; x &le;</span>
+            <input type="number" id="length-max-input" placeholder="Max" min="1" style="width: 80px; box-sizing: border-box; font-size: 1rem; padding: 0.5rem; border: 1px solid var(--history-border); border-radius: 8px; background-color: var(--input-bg-color); color: var(--history-text);">
+        </div>
+        <button class="btn" id="length-range-button" data-mode="range" style="width: 100%; margin-top: 10px;">Set Range</button>
+        
+        <h3 style="margin-top: 1.5rem;">Quick Sort</h3>
+        <div id="length-quick-buttons" class="filter-button-group">
+            <button class="btn active" data-mode="any">Any Length</button>
+            <button class="btn" data-mode="longest">Longest</button>
+            <button class="btn" data-mode="shortest">Shortest</button>
+            <button class="btn" data-mode="random">Random</button>
+        </div>
+    </div>
+    
+    <div id="cap-filter-panel" class="filter-panel right">
+        <h2>Caps</h2>
+        <div id="cap-filter-buttons" class="filter-button-group">
+            <button class="btn active" data-value="none">None-Capped</button>
+            <button class="btn" data-value="all">All Capped</button>
+            <button class="btn" data-value="random-letter">Random Letter</button>
+            <button class="btn" data-value="random-mode">Random Mode</button>
+        </div>
+    </div>
+    
+    <div id="include-filter-panel" class="filter-panel right">
+        <h2>Include Letters</h2>
+        <p style="color: var(--text-muted-color); font-size: 0.9rem;">Type in the main search bar and click '+' to add an "Include" tag.</p>
+        <div class="filter-list">
+            <h3>Include: <button type="button" id="add-include-button" class="btn add-btn">+</button></h3>
+            <div id="include-list-tags"></div>
+        </div>
+    </div>
+    
+    <div id="exclude-filter-panel" class="filter-panel right">
+        <h2>Exclude Letters</h2>
+        <p style="color: var(--text-muted-color); font-size: 0.9rem;">Type in the main search bar and click '+' to add an "Exclude" tag.</p>
+        <div class="filter-list">
+            <h3>Exclude: <button type="button" id="add-exclude-button" class="btn add-btn">+</button></h3>
+            <div id="exclude-list-tags"></div>
+        </div>
+    </div>
+    
+    <div id="history-panel" class="filter-panel"> <h2 id="history-header">History (0)</h2>
+        <input type="text" id="history-search-bar" placeholder="Search history...">
+        <div id="history-content"></div>
+        <button id="close-history-button" class="btn" style="width: 100%; margin-top: 1rem;">Close</button>
+    </div>
+    
+    <div id="stats-modal-overlay" class="modal-overlay">
+        <div id="stats-modal" class="modal">
+            <h2>Dictionary Stats</h2>
+            <div class="stat-item">Total Words: <strong id="stat-total-words">0</strong></div>
+            <div class="stat-item">With Frequency Data: <strong id="stat-freq-words">0</strong></div>
+            <div class="stat-item">Average Length: <strong id="stat-avg-length">0</strong></div>
+            <h3>Word Lengths</h3>
+            <div id="stats-chart"></div>
+            
+            <h2 style="margin-top: 20px;">History Stats</h2>
+            <div class="stat-item">Total Words Copied: <strong id="stat-total-copied">0</strong></div>
+            <div class="stat-item">Game Sessions Played: <strong id="stat-game-sessions">0</strong></div>
+            <div class="stat-item">Avg. Words per Game: <strong id="stat-avg-words-game">0</strong></div>
+            
+            <button id="stats-close-button" class="btn" style="width: 100%; margin-top: 1.5rem;">Close</button>
+        </div>
+    </div>
+    
+    <div id="define-modal-overlay" class="modal-overlay">
+        <div id="define-modal" class="modal">
+            <h2 id="define-modal-title">Define Word</h2>
+            
+            <form id="define-search-form">
+                <input type="text" id="define-search-input" placeholder="Define any word..." required>
+                <button type="submit" class="btn">Define</button>
+            </form>
+            
+            <div class="modal-tab-nav">
+                <button class="modal-tab active" data-tab="summary">Summarize</button>
+                <button class="modal-tab" data-tab="full">Full</button>
+            </div>
+            
+            <div id="define-modal-body">
+                <div id="define-modal-summary" class="modal-tab-content active"></div>
+                <div id="define-modal-full" class="modal-tab-content"></div>
+            </div>
+            
+            <button id="define-close-button" class="btn" style="width: 100%; margin-top: 1.5rem;">Close</button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+
+            // --- Element References ---
+            const searchForm = document.getElementById('search-form');
+            const searchInput = document.getElementById('search-input');
+            const resultsContainer = document.getElementById('results-container');
+            const loadingMessage = document.getElementById('loading-message');
+            const resetButton = document.getElementById('reset-button');
+            const gameToggleButton = document.getElementById('game-toggle-button');
+            const toggleHistoryButton = document.getElementById('toggle-history-button');
+            const closeHistoryButton = document.getElementById('close-history-button');
+            const historyPanel = document.getElementById('history-panel');
+            const historyContent = document.getElementById('history-content');
+            const historyHeader = document.getElementById('history-header');
+            const themeToggleButton = document.getElementById('theme-toggle-button');
+            const softlockButton = document.getElementById('softlock-button');
+            const tooltip = document.getElementById('word-tooltip');
+            const statsButton = document.getElementById('stats-button');
+            const statsModalOverlay = document.getElementById('stats-modal-overlay');
+            const statsCloseButton = document.getElementById('stats-close-button');
+            const statTotalWords = document.getElementById('stat-total-words');
+            const statFreqWords = document.getElementById('stat-freq-words');
+            const statAvgLength = document.getElementById('stat-avg-length');
+            const statsChart = document.getElementById('stats-chart');
+            const addIncludeButton = document.getElementById('add-include-button');
+            const addExcludeButton = document.getElementById('add-exclude-button');
+            const includeListTags = document.getElementById('include-list-tags');
+            const excludeListTags = document.getElementById('exclude-list-tags');
+            const historySearchInput = document.getElementById('history-search-bar');
+            const statTotalCopied = document.getElementById('stat-total-copied');
+            const statGameSessions = document.getElementById('stat-game-sessions');
+            const statAvgWordsGame = document.getElementById('stat-avg-words-game');
+            const mainAppDiv = document.getElementById('main-app');
+            const promptPageButton = document.getElementById('prompt-page-button');
+            const promptsPageDiv = document.getElementById('prompts-page');
+            const promptHomeButton = document.getElementById('prompt-home-button');
+            const promptSort = document.getElementById('prompt-sort');
+            const promptsListContainer = document.getElementById('prompts-list-container');
+            const defineToggleButton = document.getElementById('define-toggle-button');
+            const defineModalOverlay = document.getElementById('define-modal-overlay');
+            const defineModalTitle = document.getElementById('define-modal-title');
+            const defineModalBody = document.getElementById('define-modal-body');
+            const defineCloseButton = document.getElementById('define-close-button');
+            const defineModalNav = document.querySelector('.modal-tab-nav');
+            const defineSearchForm = document.getElementById('define-search-form');
+            const defineSearchInput = document.getElementById('define-search-input');
+            const subsearchPageButton = document.getElementById('subsearch-page-button');
+            const subsearchPageDiv = document.getElementById('subsearch-page');
+            const subsearchHomeButton = document.getElementById('subsearch-home-button');
+            const subsearchForm = document.getElementById('subsearch-form');
+            const subsearchInput = document.getElementById('subsearch-input');
+            const subsearchList = document.getElementById('subsearch-results-list');
+            const crazyModeButton = document.getElementById('crazy-mode-button');
+            
+            const filterPanelToggles = document.querySelectorAll('.filter-panel-toggle');
+            const uniqueFilterPanel = document.getElementById('unique-filter-panel');
+            const sortFilterPanel = document.getElementById('sort-filter-panel');
+            const lengthFilterPanel = document.getElementById('length-filter-panel');
+            const capFilterPanel = document.getElementById('cap-filter-panel');
+            const includeFilterPanel = document.getElementById('include-filter-panel');
+            const excludeFilterPanel = document.getElementById('exclude-filter-panel');
+            
+            const uniqueFilterButtons = document.getElementById('unique-filter-buttons');
+            const sortFilterButtons = document.getElementById('sort-filter-buttons');
+            const lengthQuickButtons = document.getElementById('length-quick-buttons');
+            const capFilterButtons = document.getElementById('cap-filter-buttons');
+            const lengthInputX = document.getElementById('length-input-x');
+            const lengthMinInput = document.getElementById('length-min-input');
+            const lengthMaxInput = document.getElementById('length-max-input');
+            const lengthFilterDisplay = document.getElementById('length-filter-display');
+            const lengthRangeButton = document.getElementById('length-range-button');
+            const lengthSingleButtons = document.getElementById('length-mode-buttons-single');
+
+            // --- State Variables ---
+            let masterWordSet = new Set();
+            let allCleanWords = [];
+            let nameList = new Set();
+            let wordFrequencyMap = new Map();
+            let wordCopyCountMap = new Map();
+            let allCopiedWords = new Set();
+            let threeLetterPromptMap = new Map();
+            let promptsByCountMap = new Map();
+            let dictionaryStats = {
+                totalWords: 0,
+                freqWords: 0,
+                avgLength: 0,
+                lengthDistribution: new Map(),
+                maxLength: 0
+            };
+            let copiedWordsHistory = [];
+            let gameSessions = [];
+            let isGameMode = false;
+            let currentGameSession = null;
+            let permanentIncludeList = [];
+            let permanentExcludeList = [];
+            let isSoftlocked = false;
+            let softlockBuffer = "";
+            let currentTheme = 0;
+            const themes = ['dark-theme', 'light-theme', 'retro-theme'];
+            const MAX_RESULTS_TO_DISPLAY = 300;
+            const synth = window.speechSynthesis;
+            let wordBombList = new Set();
+            let wordBombSelected = new Set();
+            let isDefineMode = false;
+            let isCrazyMode = false;
+            
+            let activeUniqueFilter = 'none';
+            let activeSortFilter = 'none';
+            let activeCapFilter = 'none';
+            let activeLengthFilter = { mode: 'any' };
+            
+            const countryList = [
+                "afghanistan", "albania", "algeria", "andorra", "angola", "antigua and barbuda", "argentina", "armenia", "australia", "austria", 
+                "austrian empire", "azerbaijan", "baden", "bahamas, the", "bahrain", "bangladesh", "barbados", "bavaria", "belarus", "belgium", 
+                "belize", "benin (dahomey)", "bolivia", "bosnia and herzegovina", "botswana", "brazil", "brunei", "brunswick and lüneburg", "bulgaria", 
+                "burkina faso (upper volta)", "burma", "burundi", "cabo verde", "cambodia", "cameroon", "canada", "cayman islands, the", 
+                "central african republic", "central american federation", "chad", "chile", "china", "colombia", "comoros", "congo free state, the", 
+                "cook islands", "costa rica", "cote d’ivoire (ivory coast)", "croatia", "cuba", "cyprus", "czechia", "czechoslovakia", 
+                "democratic republic of the congo", "denmark", "djibouti", "dominica", "dominican republic", "duchy of parma, the", "east germany (german democratic republic)", 
+                "ecuador", "egypt", "el salvador", "equatorial guinea", "eritrea", "estonia", "eswatini", "ethiopia", "federal government of germany (1848-49)", 
+                "fiji", "finland", "france", "gabon", "gambia, the", "georgia", "germany", "ghana", "grand duchy of tuscany, the", "greece", 
+                "grenada", "guatemala", "guinea", "guinea-bissau", "guyana", "haiti", "hanover", "hanseatic republics", "hawaii", "hesse", 
+                "holy see", "honduras", "hungary", "iceland", "india", "indonesia", "iran", "iraq", "ireland", "israel", "italy", "jamaica", 
+                "japan", "jordan", "kazakhstan", "kenya", "kingdom of serbia/yugoslavia", "kiribati", "korea", "kosovo", "kuwait", "kyrgyzstan", 
+                "laos", "latvia", "lebanon", "lesotho", "lew chew (loochoo)", "liberia", "libya", "liechtenstein", "lithuania", "luxembourg", 
+                "madagascar", "malawi", "malaysia", "maldives", "mali", "malta", "marshall islands", "mauritania", "mauritius", "mecklenburg-schwerin", 
+                "mecklenburg-strelitz", "mexico", "micronesia", "moldova", "monaco", "mongolia", "montenegro", "morocco", "mozambique", "namibia", 
+                "nassau", "nauru", "nepal", "netherlands, the", "new zealand", "nicaragua", "niger", "nigeria", "niue", "north german confederation", 
+                "north german union", "north macedonia", "norway", "oldenburg", "oman", "orange free state", "pakistan", "palau", "panama", 
+                "papal states", "papua new guinea", "paraguay", "peru", "philippines", "piedmont-sardinia", "poland", "portugal", "qatar", 
+                "republic of genoa", "republic of korea (south korea)", "republic of the congo", "romania", "russia", "rwanda", "saint kitts and nevis", 
+                "saint lucia", "saint vincent and the grenadines", "samoa", "san marino", "sao tome and principe", "saudi arabia", "schaumburg-lippe", 
+                "senegal", "serbia", "seychelles", "sierra leone", "singapore", "slovakia", "slovenia", "solomon islands, the", "somalia", "south africa", 
+                "south sudan", "spain", "sri lanka", "sudan", "suriname", "sweden", "switzerland", "syria", "tajikistan", "tanzania", "texas", 
+                "thailand", "timor-leste", "togo", "tonga", "trinidad and tobago", "tunisia", "turkey", "turkmenistan", "tuvalu", "two sicilies", 
+                "uganda", "ukraine", "union of soviet socialist republics", "united arab emirates, the", "united kingdom, the", "uruguay", "uzbekistan", 
+                "vanuatu", "venezuela", "vietnam", "württemberg", "yemen", "zambia", "zimbabwe"
+            ];
+
+            // --- Utility Functions ---
+            function shuffleArray(array) {
+                for (let i = array.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [array[i], array[j]] = [array[j], array[i]];
+                }
+            }
+            
+            function escapeRegExp(string) {
+                return string.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+            }
+
+            function highlightQuery(word, query) {
+                let highlightedWord = word;
+                let queriesToHighlight = [];
+                if (query) queriesToHighlight.push(query);
+                
+                const filterType = activeUniqueFilter;
+
+                if (filterType !== 'include-all') {
+                    permanentIncludeList.forEach(item => queriesToHighlight.push(item));
+                }
+                
+                const safeQueries = queriesToHighlight
+                    .filter(q => q && q.length > 0)
+                    .map(escapeRegExp);
+                
+                if (safeQueries.length > 0) {
+                    const regex = new RegExp(`(${safeQueries.join('|')})`, 'gi');
+                    highlightedWord = word.replace(regex, '<span class="highlight">$1</span>');
+                }
+                
+                
+                if (filterType === 'pattern' && query) {
+                     try {
+                        const queryPattern = query.replace(/_/g, '.');
+                        highlightedWord = highlightedWord.replace(new RegExp(`(${queryPattern})`, 'gi'), (match) => {
+                            let highlightedMatch = '';
+                            for(let i = 0; i < match.length; i++) {
+                                let char = match[i];
+                                if (query[i] !== '_' && !char.includes('span')) {
+                                    highlightedMatch += `<span class="highlight">${char}</span>`;
+                                } else {
+                                    highlightedMatch += char;
+                                }
+                            }
+                            return highlightedMatch;
+                        });
+                    } catch(e) { /* ignore */ }
+                }
+                if (filterType === 'v-c-pattern' && query) {
+                    try {
+                        highlightedWord = highlightedWord.replace(/[bcdfghjklmnpqrstvwxyz]/gi, (match) => {
+                            if (match.includes('span')) return match;
+                            return `<strong>${match}</strong>`;
+                        });
+                        highlightedWord = highlightedWord.replace(/[aeiouy]/gi, (match) => {
+                            if (match.includes('span')) return match;
+                            return `<span class="highlight">${match}</span>`;
+                        });
+                    } catch(e) { /* ignore */ }
+                }
+                if (filterType === 'include-all' && query) {
+                    try {
+                        const regex = new RegExp(`([${escapeRegExp(query)}])`, 'gi');
+                        highlightedWord = highlightedWord.replace(regex, '<span class="highlight">$1</span>');
+                    } catch(e) { /* ignore */ }
+                }
+                return highlightedWord;
+            }
+
+            function getCharMap(word) {
+                const map = {};
+                for (const char of word) {
+                    map[char] = (map[char] || 0) + 1;
+                }
+                return map;
+            }
+            
+            // --- Capping Functions (Unchanged) ---
+            function applyRandomLetterCaps(word) {
+                return word.split('').map(char => 
+                    Math.random() < 0.5 ? char.toUpperCase() : char
+                ).join('');
+            }
+            function getEffectiveCapMode() {
+                if (isCrazyMode) {
+                    const modes = ['none', 'all', 'random-letter'];
+                    return modes[Math.floor(Math.random() * modes.length)];
+                }
+                return activeCapFilter;
+            }
+            function applyCapping(word, mode) {
+                switch (mode) {
+                    case 'all': return word.toUpperCase();
+                    case 'random-letter': return applyRandomLetterCaps(word);
+                    case 'none': default: return word;
+                }
+            }
+            
+            // --- localStorage Functions (Unchanged) ---
+            function saveState() {
+                try {
+                    localStorage.setItem('wordFinderGameSessions', JSON.stringify(gameSessions));
+                    localStorage.setItem('wordFinderCopyCounts', JSON.stringify(Array.from(wordCopyCountMap.entries())));
+                    localStorage.setItem('wordFinderTheme', themes[currentTheme]);
+                    localStorage.setItem('wordFinderBombList', JSON.stringify(Array.from(wordBombList)));
+                    localStorage.setItem('wordFinderIncludeList', JSON.stringify(permanentIncludeList));
+                    localStorage.setItem('wordFinderExcludeList', JSON.stringify(permanentExcludeList));
+                } catch (e) { console.error("Failed to save state:", e); }
+            }
+            function loadState() {
+                const savedGames = localStorage.getItem('wordFinderGameSessions');
+                if (savedGames) {
+                    try { gameSessions = JSON.parse(savedGames); } catch (e) { gameSessions = []; }
+                }
+                const savedCounts = localStorage.getItem('wordFinderCopyCounts');
+                if (savedCounts) {
+                    try { 
+                        wordCopyCountMap = new Map(JSON.parse(savedCounts));
+                        allCopiedWords = new Set(wordCopyCountMap.keys());
+                    } catch (e) { 
+                        wordCopyCountMap = new Map(); 
+                        allCopiedWords = new Set();
+                    }
+                }
+                
+                migrateOldData();
+                
+                const savedTheme = localStorage.getItem('wordFinderTheme');
+                if (savedTheme && themes.includes(savedTheme)) {
+                    currentTheme = themes.indexOf(savedTheme) - 1;
+                } else {
+                    currentTheme = -1; 
+                }
+                toggleTheme();
+                
+                const savedBombList = localStorage.getItem('wordFinderBombList');
+                if (savedBombList) {
+                    try { wordBombList = new Set(JSON.parse(savedBombList)); } catch (e) { wordBombList = new Set(); }
+                }
+                const savedIncludeList = localStorage.getItem('wordFinderIncludeList');
+                if (savedIncludeList) {
+                    try { permanentIncludeList = JSON.parse(savedIncludeList); } catch (e) { permanentIncludeList = []; }
+                }
+                const savedExcludeList = localStorage.getItem('wordFinderExcludeList');
+                if (savedExcludeList) {
+                    try { permanentExcludeList = JSON.parse(savedExcludeList); } catch (e) { permanentExcludeList = []; }
+                }
+                updateHistoryPanel();
+                renderIncludeExcludeTags();
+            }
+            
+            // --- Data Migration Function ---
+            function migrateOldData() {
+                let migratedCount = 0;
+                gameSessions.forEach(session => {
+                    session.words.forEach(item => {
+                        let word = null;
+                        if(typeof item === 'string') word = item;
+                        else if (typeof item === 'object' && item.word) word = item.word;
+                        
+                        if (word && !allCopiedWords.has(word)) {
+                            allCopiedWords.add(word);
+                            wordCopyCountMap.set(word, 1);
+                            migratedCount++;
+                        }
+                    });
+                });
+                copiedWordsHistory.forEach(item => {
+                     let word = null;
+                    if(typeof item === 'string') word = item;
+                    else if (typeof item === 'object' && item.word) word = item.word;
+                     
+                    if (word && !allCopiedWords.has(word)) {
+                        allCopiedWords.add(word);
+                        wordCopyCountMap.set(word, 1);
+                        migratedCount++;
+                    }
+                });
+                
+                if (migratedCount > 0) {
+                    console.log(`Migrated ${migratedCount} words from old history to new stats system.`);
+                    saveState();
+                }
+            }
+            
+            // --- History Panel Functions (Unchanged) ---
+            function updateHistoryCounter() {
+                const total = copiedWordsHistory.length + gameSessions.reduce((acc, s) => acc + s.words.length, 0);
+                toggleHistoryButton.textContent = `History (${total})`;
+            }
+            function updateHistoryPanel() {
+                const searchTerm = historySearchInput.value.toLowerCase();
+                historyContent.innerHTML = '';
+                
+                gameSessions.forEach(session => {
+                    const sessionMatches = session.name.toLowerCase().includes(searchTerm) ||
+                                       (session.words && session.words.some(item => item.word.includes(searchTerm)));
+                    if (!searchTerm || sessionMatches) {
+                        const sessionElement = document.createElement('details');
+                        sessionElement.open = !!searchTerm;
+                        const isLocked = (session !== currentGameSession);
+                        sessionElement.className = `game-session ${isLocked ? 'locked' : ''}`;
+                        sessionElement.dataset.sessionId = session.id;
+                        const summary = document.createElement('summary');
+                        const sessionName = document.createElement('span');
+                        sessionName.className = 'session-name';
+                        sessionName.textContent = session.name;
+                        const sessionControls = document.createElement('div');
+                        sessionControls.className = 'session-controls';
+                        const renameBtn = document.createElement('button');
+                        renameBtn.className = 'btn rename-btn'; renameBtn.textContent = 'Rename';
+                        const deleteBtn = document.createElement('button');
+                        deleteBtn.className = 'btn delete-session-btn'; deleteBtn.textContent = 'Delete';
+                        sessionControls.appendChild(renameBtn); sessionControls.appendChild(deleteBtn);
+                        summary.appendChild(sessionName); summary.appendChild(sessionControls);
+                        const wordList = document.createElement('ul');
+                        wordList.className = 'session-word-list';
+                        
+                        session.words.forEach(item => {
+                            if (!searchTerm || item.word.includes(searchTerm)) {
+                                const li = document.createElement('li');
+                                li.innerHTML = `
+                                    <div>
+                                        <span>${highlightQuery(item.word, item.query)}</span>
+                                        <small class="history-word-info">
+                                            (Query: ${item.query || 'n/a'}, Filter: ${item.filter}, Caps: ${item.caps})
+                                        </small>
+                                    </div>
+                                    <button class="delete-word-btn" data-word="${item.word}">×</button>
+                                `;
+                                wordList.appendChild(li);
+                            }
+                        });
+                        sessionElement.appendChild(summary); sessionElement.appendChild(wordList);
+                        historyContent.appendChild(sessionElement);
+                    }
+                });
+                
+                if (gameSessions.length > 0 && copiedWordsHistory.length > 0) {
+                    historyContent.appendChild(document.createElement('hr')).className = 'history-divider';
+                }
+                
+                copiedWordsHistory.forEach(item => {
+                    if (!searchTerm || item.word.includes(searchTerm)) {
+                        const itemElement = document.createElement('div');
+                        itemElement.className = 'history-item';
+                        itemElement.innerHTML = `
+                            <span>${highlightQuery(item.word, item.query)}</span>
+                            <small class="history-word-info">
+                                (Query: ${item.query || 'n/a'}, Filter: ${item.filter}, Caps: ${item.caps})
+                            </small>
+                        `;
+                        historyContent.appendChild(itemElement);
+                    }
+                });
+                
+                updateHistoryCounter();
+                historyHeader.textContent = `History`;
+            }
+            
+            // --- Core Logic (File loading & findWords are unchanged) ---
+            async function loadAndProcessFile() {
+                try {
+                    const responseMaster = await fetch('initial_dictionary.txt');
+                    const contentTypeMaster = responseMaster.headers.get("content-type");
+                    if (!responseMaster.ok || !contentTypeMaster || !contentTypeMaster.includes("text/plain")) {
+                        throw new Error(`Failed to load 'initial_dictionary.txt'. Status: ${responseMaster.status}. Content-Type: ${contentTypeMaster}.`);
+                    }
+                    const textMaster = await responseMaster.text();
+                    textMaster.split('\n').forEach(line => {
+                        const word = line.trim().toLowerCase();
+                        if (word.length > 0) masterWordSet.add(word);
+                    });
+                    allCleanWords = Array.from(masterWordSet);
+                    console.log(`Master list loaded: ${allCleanWords.length} unique words.`);
+
+                    const responseFreq = await fetch('word_freq_list.txt');
+                    const contentTypeFreq = responseFreq.headers.get("content-type");
+                    if (responseFreq.ok && contentTypeFreq && contentTypeFreq.includes("text/plain")) {
+                        const textFreq = await responseFreq.text();
+                        let loadedFrequencies = 0;
+                        textFreq.split('\n').forEach(line => {
+                            const parts = line.split(',');
+                            if (parts.length === 2) {
+                                const word = parts[0].trim().toLowerCase();
+                                const count = parseInt(parts[1].trim(), 10);
+                                if (masterWordSet.has(word) && !isNaN(count)) {
+                                    wordFrequencyMap.set(word, count);
+                                    loadedFrequencies++;
+                                }
+                            }
+                        });
+                        console.log(`Frequency data loaded for ${loadedFrequencies} overlapping words.`);
+                    } else {
+                        console.log("No frequency file found or file was wrong type. 'Common' filters will be disabled.");
+                        sortFilterButtons.querySelector('button[data-value="common"]').disabled = true;
+                        sortFilterButtons.querySelector('button[data-value="least-common"]').disabled = true;
+                    }
+                    
+                    const responseNames = await fetch('names_list.txt');
+                    const contentTypeNames = responseNames.headers.get("content-type");
+                    if (responseNames.ok && contentTypeNames && contentTypeNames.includes("text/plain")) {
+                        const textNames = await responseNames.text();
+                        textNames.split('\n').forEach(line => {
+                            const name = line.trim().toLowerCase();
+                            if (name.length > 0) nameList.add(name);
+                        });
+                        console.log(`Names list loaded: ${nameList.size} unique names.`);
+                    } else {
+                        console.log("No names_list.txt found. 'Names' filter will be disabled.");
+                        uniqueFilterButtons.querySelector('button[data-value="names"]').disabled = true;
+                    }
+                    
+                    loadingMessage.style.display = 'none';
+                    resultsContainer.style.display = 'block';
+                    calculateStatsAndPrompts();
+                    
+                } catch (error) {
+                    loadingMessage.textContent = `Error: ${error.message} Check file names and that the server is running.`;
+                    console.error(error);
+                }
+            }
+
+            // --- findWords (Updated) ---
+            function findWords(query, uniqueFilterType, sortFilterType, lenFilter, wordsToExclude = []) {
+                const excludeSet = new Set(wordsToExclude);
+                let candidateWords = [];
+                let patternRegex = null;
+                let queryCharMap = null;
+                let queryLetterSet = null;
+                
+                let sourceList;
+                if (uniqueFilterType === 'by-countries') {
+                    sourceList = countryList.filter(country => masterWordSet.has(country));
+                } else if (uniqueFilterType === 'word-bomb') {
+                    if (wordBombList.size === 0) return [];
+                    sourceList = Array.from(wordBombList);
+                } else if (uniqueFilterType === 'names') {
+                    if (nameList.size === 0) return [];
+                    sourceList = Array.from(nameList).filter(name => masterWordSet.has(name));
+                } else {
+                    sourceList = allCleanWords;
+                }
+                
+                if (uniqueFilterType === 'pattern') {
+                    try { patternRegex = new RegExp(query.replace(/_/g, '.'), 'i'); } catch (e) { return []; }
+                }
+                if (uniqueFilterType === 'v-c-pattern') {
+                    try {
+                        const pattern = query.replace(/v/gi, '[aeiouy]').replace(/c/gi, '[bcdfghjklmnpqrstvwxyz]');
+                        patternRegex = new RegExp(`^${pattern}$`);
+                    } catch (e) { return []; }
+                }
+                if (uniqueFilterType === 'anagram') {
+                    queryCharMap = getCharMap(query);
+                }
+                if (uniqueFilterType === 'include-all') {
+                    queryLetterSet = new Set(query.split(''));
+                }
+
+                for (const word of sourceList) {
+                    if (excludeSet.has(word)) continue;
+                    
+                    if (uniqueFilterType !== 'by-countries') {
+                        if (permanentExcludeList.length > 0 && permanentExcludeList.some(ex => word.includes(ex))) continue;
+                        if (permanentIncludeList.length > 0 && !permanentIncludeList.every(inc => word.includes(inc))) continue;
+                    }
+                    
+                    let matchesBase = false;
+                    switch (uniqueFilterType) {
+                        case 'pattern':
+                        case 'v-c-pattern':
+                            matchesBase = patternRegex.test(word);
+                            break;
+                        case 'anagram':
+                            const wordCharMap = getCharMap(word);
+                            matchesBase = true;
+                            for (const char in wordCharMap) {
+                                if (!queryCharMap[char] || wordCharMap[char] > queryCharMap[char]) {
+                                    matchesBase = false; break;
+                                }
+                            }
+                            break;
+                        case 'include-all':
+                            if (queryLetterSet) {
+                                matchesBase = [...queryLetterSet].every(letter => word.includes(letter));
+                            }
+                            break;
+                        default: // 'none', 'word-bomb', 'by-countries', 'names'
+                            if(sortFilterType === 'starting') {
+                                matchesBase = word.startsWith(query);
+                            } else if (sortFilterType === 'ending') {
+                                matchesBase = word.endsWith(query);
+                            } else {
+                                matchesBase = (query.length === 0) ? true : word.includes(query);
+                            }
+                            break;
+                    }
+                    if (matchesBase) {
+                        candidateWords.push(word);
+                    }
+                }
+                if (candidateWords.length === 0) return [];
+                
+                // --- Length Filter (Applies to all) ---
+                if (lenFilter.mode !== 'any') {
+                    switch(lenFilter.mode) {
+                        case 'equal':
+                            candidateWords = candidateWords.filter(w => w.length === lenFilter.value);
+                            break;
+                        case 'notEqual':
+                            candidateWords = candidateWords.filter(w => w.length !== lenFilter.value);
+                            break;
+                        case 'lessThan':
+                            candidateWords = candidateWords.filter(w => w.length < lenFilter.value);
+                            break;
+                        case 'lessOrEqual':
+                            candidateWords = candidateWords.filter(w => w.length <= lenFilter.value);
+                            break;
+                        case 'greaterThan':
+                            candidateWords = candidateWords.filter(w => w.length > lenFilter.value);
+                            break;
+                        case 'greaterOrEqual':
+                            candidateWords = candidateWords.filter(w => w.length >= lenFilter.value);
+                            break;
+                        case 'range':
+                            candidateWords = candidateWords.filter(w => w.length >= lenFilter.min && w.length <= lenFilter.max);
+                            break;
+                        case 'longest':
+                            let longestLength = 0;
+                            candidateWords.forEach(w => { if (w.length > longestLength) longestLength = w.length; });
+                            candidateWords = candidateWords.filter(w => w.length === longestLength);
+                            break;
+                        case 'shortest':
+                            let shortestLength = Infinity;
+                            candidateWords.forEach(w => { if (w.length < shortestLength) shortestLength = w.length; });
+                            candidateWords = candidateWords.filter(w => w.length === shortestLength);
+                            break;
+                        case 'random':
+                            const availableLengths = [...new Set(candidateWords.map(w => w.length))];
+                            if(availableLengths.length > 0) {
+                                const randomLen = availableLengths[Math.floor(Math.random() * availableLengths.length)];
+                                candidateWords = candidateWords.filter(w => w.length === randomLen);
+                            }
+                            break;
+                    }
+                }
+                if (candidateWords.length === 0) return [];
+                
+                
+                // --- Sort Filter (Common, Least Common) ---
+                if (uniqueFilterType !== 'by-countries') {
+                    switch (sortFilterType) {
+                        case 'common': {
+                            const candidatesWithFreq = candidateWords.filter(w => wordFrequencyMap.has(w));
+                            if (candidatesWithFreq.length > 0) { // Don't return [] if no freq data
+                                candidatesWithFreq.sort((a, b) => (wordFrequencyMap.get(b) || 0) - (wordFrequencyMap.get(a) || 0));
+                                const mostCommonFreq = wordFrequencyMap.get(candidatesWithFreq[0]);
+                                candidateWords = candidatesWithFreq.filter(w => wordFrequencyMap.get(w) === mostCommonFreq);
+                            }
+                            break;
+                        }
+                        case 'least-common': {
+                            const candidatesWithFreq = candidateWords.filter(w => wordFrequencyMap.has(w));
+                            if (candidatesWithFreq.length > 0) {
+                                candidatesWithFreq.sort((a, b) => (wordFrequencyMap.get(a) || 0) - (wordFrequencyMap.get(b) || 0));
+                                const leastCommonFreq = wordFrequencyMap.get(candidatesWithFreq[0]);
+                                candidateWords = candidatesWithFreq.filter(w => wordFrequencyMap.get(w) === leastCommonFreq);
+                            }
+                            break;
+                        }
+                    }
+                }
+                if (candidateWords.length === 0) return [];
+
+                // --- Final Sort (Length) ---
+                if (lenFilter.mode === 'longest') {
+                    return candidateWords.sort((a, b) => b.length - a.length);
+                }
+                if (lenFilter.mode === 'shortest') {
+                    return candidateWords.sort((a, b) => a.length - b.length);
+                }
+                
+                if (sortFilterType === 'common' || sortFilterType === 'least-common') {
+                    return candidateWords;
+                }
+                
+                return candidateWords;
+            }
+            
+            // --- copyToClipboard (Updated) ---
+            function copyToClipboard(formattedWord, originalWord, element, query = "") {
+                navigator.clipboard.writeText(formattedWord).then(() => {
+                    const count = (wordCopyCountMap.get(originalWord) || 0) + 1;
+                    wordCopyCountMap.set(originalWord, count);
+                    allCopiedWords.add(originalWord);
+                    saveState();
+                    
+                    if (element) {
+                        element.classList.add('copied');
+                        element.dataset.tooltip = getTooltipText(originalWord);
+                        // No "Copied!" text
+                    } else {
+                        const highlightedHtml = highlightQuery(formattedWord, query);
+                        resultsContainer.innerHTML = `Copied: ${highlightedHtml}`;
+                    }
+                }).catch(err => console.error('Failed to copy text: ', err));
+            }
+
+            // --- addToHistory (Updated) ---
+            function addToHistory(originalWord, query, uniqueFilterType, sortFilterType, capMode) {
+                const combinedQuery = query || permanentIncludeList.join(',') || 'n/a';
+                const newWordItem = { 
+                    word: originalWord, 
+                    query: combinedQuery, 
+                    filter: `${uniqueFilterType} / ${sortFilterType}`,
+                    caps: capMode, 
+                    game: isGameMode 
+                };
+                
+                if (isGameMode && currentGameSession) {
+                    if (!currentGameSession.words.some(item => item.word === originalWord)) {
+                        currentGameSession.words.push(newWordItem);
+                        saveState();
+                    }
+                } else if (!isGameMode) {
+                    if (uniqueFilterType !== 'by-countries' && uniqueFilterType !== 'names') {
+                         if (!copiedWordsHistory.some(item => item.word === originalWord)) {
+                            copiedWordsHistory.push(newWordItem);
+                        }
+                    }
+                }
+                updateHistoryPanel();
+            }
+
+            // --- handleSearch (Main routing) (Updated) ---
+            function handleSearch(event) {
+                if (event) event.preventDefault();
+                const query = isSoftlocked ? softlockBuffer.trim().toLowerCase() : searchInput.value.trim().toLowerCase();
+                
+                if (isCrazyMode) {
+                    runCrazySearch(query);
+                    return; // Crazy mode handles its own search
+                }
+                
+                const uniqueFilterType = activeUniqueFilter;
+                const sortFilterType = activeSortFilter;
+                const lenFilter = activeLengthFilter;
+                const capMode = activeCapFilter;
+                
+                if (isGameMode) {
+                    handleGameSearch(query, uniqueFilterType, sortFilterType, lenFilter, capMode);
+                } else {
+                    handleNormalSearch(query, uniqueFilterType, sortFilterType, lenFilter, capMode);
+                }
+                if(isSoftlocked) {
+                    softlockBuffer = "";
+                }
+            }
+            
+            // --- NEW: Crazy Search Function ---
+            function runCrazySearch(query) {
+                let foundWordsList = [];
+                let uniqueFilterType, sortFilterType, lenFilter, capMode;
+                
+                let wordsToExclude = [];
+                if (isGameMode && currentGameSession) {
+                    wordsToExclude = Array.from(new Set(currentGameSession.words.map(item => item.word)));
+                }
+
+                let attempts = 0;
+                do {
+                    const capOptions = ['none', 'all', 'random-letter'];
+                    capMode = capOptions[Math.floor(Math.random() * capOptions.length)];
+
+                    const lengthOptions = ['longest', 'shortest'];
+                    for (let i = 3; i <= dictionaryStats.maxLength; i++) {
+                        lengthOptions.push({ mode: 'equal', value: i });
+                    }
+                    lengthOptions.push({ mode: 'any' }); 
+                    lenFilter = lengthOptions[Math.floor(Math.random() * lengthOptions.length)];
+                    
+                    const crazyFilters = [
+                        { unique: 'none', sort: 'none' },
+                        { unique: 'none', sort: 'common' },
+                        { unique: 'none', sort: 'least-common' },
+                        { unique: 'by-countries', sort: 'none' },
+                        { unique: 'names', sort: 'none' },
+                        { unique: 'none', sort: 'starting' },
+                        { unique: 'none', sort: 'ending' }
+                    ];
+                    
+                    const randomFilter = crazyFilters[Math.floor(Math.random() * crazyFilters.length)];
+                    uniqueFilterType = randomFilter.unique;
+                    sortFilterType = randomFilter.sort;
+                    
+                    if(lenFilter === 'longest') lenFilter = { mode: 'longest' };
+                    if(lenFilter === 'shortest') lenFilter = { mode: 'shortest' };
+
+                    foundWordsList = findWords(query, uniqueFilterType, sortFilterType, lenFilter, wordsToExclude);
+                    attempts++;
+
+                } while (foundWordsList.length === 0 && query.length > 0 && attempts < 50);
+
+                if (foundWordsList.length === 0) {
+                    resultsContainer.textContent = `Crazy Mode failed to find a match after 50 attempts! Try a different query.`;
+                    return;
+                }
+
+                if (isGameMode) {
+                    const randomWord = foundWordsList[Math.floor(Math.random() * foundWordsList.length)];
+                    const formattedWord = applyCapping(randomWord, capMode);
+                    copyToClipboard(formattedWord, randomWord, null, query);
+                    addToHistory(randomWord, query, uniqueFilterType, sortFilterType, capMode);
+                } else {
+                    handleNormalSearch(query, uniqueFilterType, sortFilterType, lenFilter, capMode, foundWordsList);
+                }
+            }
+            
+            // --- getTooltipText (Unchanged) ---
+            function getTooltipText(word) {
+                const freq = wordFrequencyMap.get(word) || 'N/A';
+                const copies = wordCopyCountMap.get(word) || 0;
+                return `Length: ${word.length} | Freq: ${freq} | Copied: ${copies}`;
+            }
+
+            // --- handleNormalSearch (Unchanged) ---
+            function handleNormalSearch(query, uniqueFilterType, sortFilterType, lenFilter, capMode, preFoundWordsList = null) {
+                resultsContainer.innerHTML = '';
+                if (query.length === 0 && permanentIncludeList.length === 0 && uniqueFilterType !== 'word-bomb' && uniqueFilterType !== 'anagram' && uniqueFilterType !== 'by-countries' && uniqueFilterType !== 'names') return;
+
+                const foundWordsList = preFoundWordsList || findWords(query, uniqueFilterType, sortFilterType, lenFilter);
+                
+                if (foundWordsList.length === 0) {
+                    resultsContainer.textContent = `No words found.`;
+                    return;
+                }
+
+                let displayList = foundWordsList;
+                
+                if (sortFilterType === 'none' && lenFilter.mode === 'any') {
+                    shuffleArray(displayList);
+                }
+                
+                const totalMatches = displayList.length;
+                const wordsToDisplay = displayList.slice(0, MAX_RESULTS_TO_DISPLAY);
+                const fragment = document.createDocumentFragment();
+                const summary = document.createElement('div');
+                summary.id = 'results-summary';
+                summary.textContent = `Showing ${wordsToDisplay.length} of ${totalMatches} matching words.`;
+                fragment.appendChild(summary);
+
+                for (const originalWord of wordsToDisplay) {
+                    const wordElement = document.createElement('span');
+                    const formattedWord = applyCapping(originalWord, capMode);
+                    const highlightedHtml = highlightQuery(formattedWord, query);
+                    const ttsIcon = `<span class="tts-icon">🔊</span>`;
+                    wordElement.innerHTML = highlightedHtml + ttsIcon;
+                    wordElement.className = 'word-item';
+                    wordElement.dataset.originalWord = originalWord;
+                    
+                    if (allCopiedWords.has(originalWord)) {
+                        wordElement.classList.add('copied');
+                    }
+                    if (wordBombSelected.has(originalWord)) {
+                        wordElement.classList.add('word-bomb-selected');
+                    }
+                    fragment.appendChild(wordElement);
+                }
+                resultsContainer.appendChild(fragment);
+            }
+
+            // --- handleGameSearch (Unchanged) ---
+            function handleGameSearch(query, uniqueFilterType, sortFilterType, lenFilter, capMode) {
+                if (query.length < 1 && permanentIncludeList.length < 1) { 
+                    resultsContainer.textContent = 'Game Mode: Please enter letters to search.';
+                    return;
+                }
+                if (!currentGameSession) {
+                    resultsContainer.textContent = 'Error: No active game session.';
+                    return;
+                }
+                const usedWordsInThisGame = new Set(currentGameSession.words.map(item => item.word));
+                const unusedMatches = findWords(query, uniqueFilterType, sortFilterType, lenFilter, Array.from(usedWordsInThisGame));
+
+                if (unusedMatches.length === 0) {
+                    resultsContainer.textContent = `No *new* words found.`;
+                    return;
+                }
+                
+                let finalCandidates = unusedMatches;
+                
+                let tieBreakerList = [];
+                if (uniqueFilterType === 'by-countries' || uniqueFilterType === 'names') {
+                    tieBreakerList = finalCandidates;
+                }
+                else if(sortFilterType === 'longest' || lenFilter.mode === 'longest') {
+                    const best = finalCandidates[0].length;
+                    tieBreakerList = finalCandidates.filter(w => w.length === best);
+                } else if (sortFilterType === 'shortest' || lenFilter.mode === 'shortest') {
+                    const best = finalCandidates[0].length;
+                    tieBreakerList = finalCandidates.filter(w => w.length === best);
+                } else if (sortFilterType === 'common') {
+                    const best = wordFrequencyMap.get(finalCandidates[0]);
+                    tieBreakerList = finalCandidates.filter(w => wordFrequencyMap.get(w) === best);
+                } else if (sortFilterType === 'least-common') {
+                    const best = wordFrequencyMap.get(finalCandidates[0]);
+                    tieBreakerList = finalCandidates.filter(w => wordFrequencyMap.get(w) === best);
+                } else {
+                    tieBreakerList = finalCandidates;
+                }
+                
+                if(tieBreakerList.length === 0) {
+                     resultsContainer.textContent = `No *new* words found for that combo.`;
+                    return;
+                }
+
+                const randomWord = tieBreakerList[Math.floor(Math.random() * tieBreakerList.length)];
+                const formattedWord = applyCapping(randomWord, capMode);
+                
+                copyToClipboard(formattedWord, randomWord, null, query);
+                addToHistory(randomWord, query, uniqueFilterType, sortFilterType, capMode);
+            }
+            
+            // --- NEW: Define Word Function (with Fallback) ---
+            async function defineWord(word) {
+                defineModalTitle.textContent = `Defining "${word}"...`;
+                defineSearchInput.value = word;
+                
+                document.getElementById('define-modal-summary').innerHTML = '<em>Loading...</em>';
+                document.getElementById('define-modal-full').innerHTML = '<em>Loading...</em>';
+                showDefineTab('summary');
+                
+                defineModalOverlay.style.display = 'flex';
+                
+                try {
+                    // --- Attempt 1: Primary API ---
+                    const data = await fetchDictionaryApi(word);
+                    populateDefineModal(data);
+                    
+                } catch (error) {
+                    console.warn(`Primary API failed for "${word}", trying Wiktionary...`);
+                    try {
+                        // --- Attempt 2: Wiktionary Fallback ---
+                        const data = await fetchWiktionaryApi(word);
+                        populateDefineModal(data);
+                        
+                    } catch (fallbackError) {
+                        // --- Both Failed ---
+                        console.error(`All definition sources failed for "${word}"`);
+                        defineModalTitle.textContent = `Define Word`;
+                        const errorHtml = `<p>Sorry, no definition found for "${word}".</p>`;
+                        document.getElementById('define-modal-summary').innerHTML = errorHtml;
+                        document.getElementById('define-modal-full').innerHTML = errorHtml;
+                    }
+                }
+            }
+
+            async function fetchDictionaryApi(word) {
+                const response = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${word}`);
+                if (!response.ok) {
+                    throw new Error('Word not found in dictionaryapi.dev');
+                }
+                const data = await response.json();
+                
+                const entry = data[0];
+                let summaryHtml = '';
+                let fullHtml = '';
+                
+                fullHtml += `<h3>${entry.word} <small style="color: var(--text-muted-color);">${entry.phonetic || ''}</small></h3>`;
+                
+                entry.meanings.forEach(meaning => {
+                    fullHtml += `<h4>(${meaning.partOfSpeech})</h4>`;
+                    meaning.definitions.forEach((def, index) => {
+                        fullHtml += `<p><b>${index + 1}.</b> ${def.definition}</p>`;
+                        if (def.example) {
+                            fullHtml += `<p><em>e.g., "${def.example}"</em></p>`;
+                        }
+                    });
+                });
+                
+                if (entry.meanings[0] && entry.meanings[0].definitions[0]) {
+                    summaryHtml = `<h3>${entry.word} <small style="color: var(--text-muted-color);">${entry.phonetic || ''}</small></h3>`;
+                    summaryHtml += `<h4>(${entry.meanings[0].partOfSpeech})</h4>`;
+                    summaryHtml += `<p><b>1.</b> ${entry.meanings[0].definitions[0].definition}</p>`;
+                    if (entry.meanings[0].definitions[0].example) {
+                        summaryHtml += `<p><em>e.g., "${entry.meanings[0].definitions[0].example}"</em></p>`;
+                    }
+                } else {
+                    summaryHtml = fullHtml;
+                }
+                
+                return { title: `Definition for "${entry.word}"`, summaryHtml, fullHtml };
+            }
+
+            async function fetchWiktionaryApi(word) {
+                const response = await fetch(`https://en.wiktionary.org/api/rest_v1/page/definition/${word}`);
+                if (!response.ok) {
+                    throw new Error('Word not found in Wiktionary');
+                }
+                const data = await response.json();
+                
+                const entry = data.en[0]; // Get first English entry
+                if (!entry || !entry.definitions || entry.definitions.length === 0) {
+                     throw new Error('Wiktionary entry has no definitions');
+                }
+                
+                let summaryHtml = '';
+                let fullHtml = '';
+                
+                fullHtml += `<h3>${entry.word} <small style="color: var(--text-muted-color);">(from Wiktionary)</small></h3>`;
+                
+                data.en.forEach(meaningSection => {
+                    fullHtml += `<h4>(${meaningSection.partOfSpeech})</h4>`;
+                    meaningSection.definitions.forEach((def, index) => {
+                        fullHtml += `<p><b>${index + 1}.</b> ${def.definition}</p>`; 
+                    });
+                });
+                
+                summaryHtml = `<h3>${entry.word} <small style="color: var(--text-muted-color);">(from Wiktionary)</small></h3>`;
+                summaryHtml += `<h4>(${entry.partOfSpeech})</h4>`;
+                summaryHtml += `<p><b>1.</b> ${entry.definitions[0].definition}</p>`;
+
+                return { title: `Definition for "${entry.word}"`, summaryHtml, fullHtml };
+            }
+            
+            function populateDefineModal({ title, summaryHtml, fullHtml }) {
+                defineModalTitle.textContent = title;
+                document.getElementById('define-modal-summary').innerHTML = summaryHtml;
+                document.getElementById('define-modal-full').innerHTML = fullHtml;
+            }
+            
+            function showDefineTab(tabId) {
+                document.querySelectorAll('.modal-tab').forEach(tab => tab.classList.remove('active'));
+                document.querySelectorAll('.modal-tab-content').forEach(content => content.classList.remove('active'));
+                
+                document.querySelector(`.modal-tab[data-tab="${tabId}"]`).classList.add('active');
+                document.getElementById(`define-modal-${tabId}`).classList.add('active');
+            }
+            
+            // --- speakWord (Unchanged) ---
+            function speakWord(word) {
+                synth.cancel(); 
+                const utterance = new SpeechSynthesisUtterance(word);
+                synth.speak(utterance);
+            }
+            
+            // --- Stats Modal Functions (Unchanged) ---
+            function calculateStatsAndPrompts() {
+                dictionaryStats.totalWords = allCleanWords.length;
+                dictionaryStats.freqWords = wordFrequencyMap.size;
+                let totalLength = 0;
+                let maxLength = 0;
+                const lengthMap = new Map();
+                for (const word of allCleanWords) {
+                    const len = word.length;
+                    totalLength += len;
+                    lengthMap.set(len, (lengthMap.get(len) || 0) + 1);
+                    if (len > maxLength) maxLength = len;
+                    
+                    if (word.length >= 3) {
+                        for (let i = 0; i <= word.length - 3; i++) {
+                            const prompt = word.substring(i, i + 3);
+                            if (!threeLetterPromptMap.has(prompt)) {
+                                threeLetterPromptMap.set(prompt, new Set());
+                            }
+                            threeLetterPromptMap.get(prompt).add(word);
+                        }
+                    }
+                }
+                
+                threeLetterPromptMap.forEach((wordSet, prompt) => {
+                    const count = wordSet.size;
+                    if (!promptsByCountMap.has(count)) {
+                        promptsByCountMap.set(count, []);
+                    }
+                    promptsByCountMap.get(count).push(prompt);
+                });
+                
+                dictionaryStats.avgLength = (totalLength / allCleanWords.length).toFixed(1);
+                dictionaryStats.lengthDistribution = lengthMap;
+                dictionaryStats.maxLength = maxLength;
+                // populateLengthFilter(maxLength); // No longer needed
+                console.log(`Pre-calculated ${threeLetterPromptMap.size} 3-letter prompts.`);
+            }
+
+            function populateStatsModal() {
+                statTotalWords.textContent = dictionaryStats.totalWords.toLocaleString();
+                statFreqWords.textContent = dictionaryStats.freqWords.toLocaleString();
+                statAvgLength.textContent = dictionaryStats.avgLength;
+                statsChart.innerHTML = '';
+                let maxCount = 0;
+                for (const count of dictionaryStats.lengthDistribution.values()) {
+                    if (count > maxCount) maxCount = count;
+                }
+                for (let i = 1; i <= dictionaryStats.maxLength; i++) {
+                    const count = dictionaryStats.lengthDistribution.get(i) || 0;
+                    if (count === 0) continue; 
+                    const bar = document.createElement('div');
+                    bar.className = 'chart-bar';
+                    const heightPercent = (count / maxCount) * 100;
+                    bar.style.height = `${heightPercent}%`;
+                    bar.innerHTML = `<span class="bar-label">${i}</span>`;
+                    bar.title = `${count.toLocaleString()} words of length ${i}`;
+                    statsChart.appendChild(bar);
+                }
+                
+                const totalCopied = allCopiedWords.size;
+                const gameSessionsCount = gameSessions.length;
+                let avgWords = 0;
+                const totalGameWords = gameSessions.reduce((acc, s) => acc + s.words.length, 0);
+                if (gameSessionsCount > 0) {
+                    avgWords = (totalGameWords / gameSessionsCount).toFixed(1);
+                }
+                statTotalCopied.textContent = totalCopied.toLocaleString();
+                statGameSessions.textContent = gameSessionsCount.toLocaleString();
+                statAvgWordsGame.textContent = avgWords;
+            }
+
+            // --- Event Listeners ---
+            searchForm.addEventListener('submit', handleSearch);
+            themeToggleButton.addEventListener('click', toggleTheme);
+            function toggleTheme() {
+                document.body.classList.remove(themes[currentTheme]);
+                currentTheme = (currentTheme + 1) % themes.length;
+                const newTheme = themes[currentTheme];
+                document.body.classList.add(newTheme);
+                saveState();
+            }
+            
+            // --- NEW: Panel Toggling Logic ---
+            let openPanel = null;
+            function closeOpenPanel() {
+                if (openPanel) {
+                    openPanel.classList.remove('open');
+                    openPanel = null;
+                }
+            }
+            
+            filterPanelToggles.forEach(button => {
+                button.addEventListener('click', () => {
+                    const panelId = button.dataset.panel;
+                    const panel = document.getElementById(panelId);
+                    
+                    if (openPanel && openPanel === panel) {
+                        closeOpenPanel();
+                    } else {
+                        closeOpenPanel();
+                        panel.classList.add('open');
+                        openPanel = panel;
+                    }
+                });
+            });
+            
+            // --- NEW: Filter Button Group Logic ---
+            function setupButtonGroup(container, stateUpdateCallback) {
+                container.addEventListener('click', (e) => {
+                    if (e.target.classList.contains('btn')) {
+                        container.querySelectorAll('.btn').forEach(btn => btn.classList.remove('active'));
+                        e.target.classList.add('active');
+                        stateUpdateCallback(e.target.dataset.value);
+                    }
+                });
+            }
+            
+            setupButtonGroup(uniqueFilterButtons, (value) => activeUniqueFilter = value);
+            setupButtonGroup(sortFilterButtons, (value) => activeSortFilter = value);
+            setupButtonGroup(capFilterButtons, (value) => activeCapFilter = value);
+            
+            // --- NEW: Length Panel Logic ---
+            function updateLengthFilterDisplay() {
+                const { mode, value, min, max } = activeLengthFilter;
+                let text = "Current: ";
+                switch (mode) {
+                    case 'any': text += "Any Length"; break;
+                    case 'longest': text += "Longest"; break;
+                    case 'shortest': text += "Shortest"; break;
+                    case 'random': text += "Random"; break;
+                    case 'equal': text += `Equal to ${value}`; break;
+                    case 'notEqual': text += `Not Equal to ${value}`; break;
+                    case 'lessThan': text += `Less than ${value}`; break;
+                    case 'lessOrEqual': text += `Less than or Equal to ${value}`; break;
+                    case 'greaterThan': text += `Greater than ${value}`; break;
+                    case 'greaterOrEqual': text += `Greater than or Equal to ${value}`; break;
+                    case 'range': text += `Between ${min} and ${max}`; break;
+                }
+                lengthFilterDisplay.textContent = text;
+            }
+            
+            lengthQuickButtons.addEventListener('click', (e) => {
+                if (e.target.classList.contains('btn')) {
+                    lengthQuickButtons.querySelectorAll('.btn').forEach(btn => btn.classList.remove('active'));
+                    lengthSingleButtons.querySelectorAll('.btn').forEach(btn => btn.classList.remove('active'));
+                    lengthRangeButton.classList.remove('active');
+                    e.target.classList.add('active');
+                    activeLengthFilter = { mode: e.target.dataset.mode };
+                    updateLengthFilterDisplay();
+                }
+            });
+            
+            lengthSingleButtons.addEventListener('click', (e) => {
+                if (e.target.classList.contains('btn')) {
+                    const value = parseInt(lengthInputX.value, 10);
+                    if (!isNaN(value)) {
+                        lengthQuickButtons.querySelectorAll('.btn').forEach(btn => btn.classList.remove('active'));
+                        lengthSingleButtons.querySelectorAll('.btn').forEach(btn => btn.classList.remove('active'));
+                        lengthRangeButton.classList.remove('active');
+                        e.target.classList.add('active');
+                        activeLengthFilter = { mode: e.target.dataset.mode, value };
+                        updateLengthFilterDisplay();
+                    } else {
+                        alert("Please enter a number for 'x'.");
+                    }
+                }
+            });
+
+            lengthRangeButton.addEventListener('click', (e) => {
+                const min = parseInt(lengthMinInput.value, 10);
+                const max = parseInt(lengthMaxInput.value, 10);
+                if (!isNaN(min) && !isNaN(max) && min <= max) {
+                    lengthQuickButtons.querySelectorAll('.btn').forEach(btn => btn.classList.remove('active'));
+                    lengthSingleButtons.querySelectorAll('.btn').forEach(btn => btn.classList.remove('active'));
+                    e.target.classList.add('active');
+                    activeLengthFilter = { mode: 'range', min, max };
+                    updateLengthFilterDisplay();
+                } else {
+                    alert("Please enter a valid min and max range.");
+                }
+            });
+
+
+            // --- Include/Exclude Listeners (Unchanged) ---
+            function renderIncludeExcludeTags() {
+                includeListTags.innerHTML = '';
+                permanentIncludeList.forEach(item => {
+                    const tag = document.createElement('span');
+                    tag.className = 'filter-tag filter-tag-include';
+                    tag.textContent = item;
+                    const removeBtn = document.createElement('button');
+                    removeBtn.className = 'remove-tag-btn';
+                    removeBtn.innerHTML = '&times;';
+                    removeBtn.dataset.item = item;
+                    tag.appendChild(removeBtn);
+                    includeListTags.appendChild(tag);
+                });
+                excludeListTags.innerHTML = '';
+                permanentExcludeList.forEach(item => {
+                    const tag = document.createElement('span');
+                    tag.className = 'filter-tag filter-tag-exclude';
+                    tag.textContent = item;
+                    const removeBtn = document.createElement('button');
+                    removeBtn.className = 'remove-tag-btn';
+                    removeBtn.innerHTML = '&times;';
+                    removeBtn.dataset.item = item;
+                    tag.appendChild(removeBtn);
+                    excludeListTags.appendChild(tag);
+                });
+            }
+            addIncludeButton.addEventListener('click', () => {
+                const query = searchInput.value.trim().toLowerCase();
+                if (query.length > 0 && !permanentIncludeList.includes(query)) {
+                    permanentIncludeList.push(query);
+                    searchInput.value = '';
+                    renderIncludeExcludeTags();
+                    saveState();
+                }
+            });
+            addExcludeButton.addEventListener('click', () => {
+                const query = searchInput.value.trim().toLowerCase();
+                if (query.length > 0 && !permanentExcludeList.includes(query)) {
+                    permanentExcludeList.push(query);
+                    searchInput.value = '';
+                    renderIncludeExcludeTags();
+                    saveState();
+                }
+            });
+            includeListTags.addEventListener('click', (e) => {
+                if (e.target.classList.contains('remove-tag-btn')) {
+                    const item = e.target.dataset.item;
+                    permanentIncludeList = permanentIncludeList.filter(i => i !== item);
+                    renderIncludeExcludeTags();
+                    saveState();
+                }
+            });
+            excludeListTags.addEventListener('click', (e) => {
+                if (e.target.classList.contains('remove-tag-btn')) {
+                    const item = e.target.dataset.item;
+                    permanentExcludeList = permanentExcludeList.filter(i => i !== item);
+                    renderIncludeExcludeTags();
+                    saveState();
+                }
+            });
+
+            // (Game Toggle and Softlock listeners unchanged)
+            gameToggleButton.addEventListener('click', () => {
+                isGameMode = !isGameMode;
+                if (isGameMode) {
+                    gameToggleButton.textContent = 'End Game';
+                    gameToggleButton.classList.add('game-active');
+                    softlockButton.style.display = 'inline-block';
+                    resultsContainer.innerHTML = 'Game Mode Started!';
+                    searchInput.placeholder = "e.g., ing";
+                    const date = new Date().toLocaleDateString('en-GB');
+                    currentGameSession = { id: Date.now(), name: `Game - ${date}`, words: [] };
+                    gameSessions.push(currentGameSession);
+                    updateHistoryPanel();
+                    saveState();
+                } else {
+                    gameToggleButton.textContent = 'Start Game';
+                    gameToggleButton.classList.remove('game-active');
+                    softlockButton.style.display = 'none';
+                    resultsContainer.innerHTML = 'Game Mode Ended.';
+                    searchInput.placeholder = "e.g., s_a_e";
+                    currentGameSession = null; 
+                    if (isSoftlocked) {
+                        toggleSoftlock();
+                    }
+                    updateHistoryPanel();
+                    saveState();
+                }
+            });
+            softlockButton.addEventListener('click', () => {
+                toggleSoftlock();
+            });
+            function toggleSoftlock() {
+                isSoftlocked = !isSoftlocked;
+                if (isSoftlocked) {
+                    softlockBuffer = "";
+                    document.body.classList.add('softlocked');
+                    softlockButton.textContent = 'Unlock';
+                    resultsContainer.innerHTML = `Softlock On. Start typing... (Press Shift to search)`;
+                } else {
+                    document.body.classList.remove('softlocked');
+                    softlockButton.textContent = 'Softlock';
+                    resultsContainer.innerHTML = 'Softlock Off.';
+                }
+            }
+            document.addEventListener('keydown', (e) => {
+                if (!isGameMode || !isSoftlocked) {
+                    return;
+                }
+                e.preventDefault(); 
+                if (e.key === 'Shift') {
+                    handleSearch(null); 
+                } else if (e.key === 'Backspace') {
+                    softlockBuffer = softlockBuffer.slice(0, -1);
+                } else if (e.key.length === 1) {
+                    softlockBuffer += e.key;
+                }
+                if (e.key !== 'Shift') {
+                    resultsContainer.innerHTML = `Softlock On. Prompt: <strong class="highlight">${softlockBuffer}</strong> (Press Shift to search)`;
+                }
+            });
+
+            resetButton.addEventListener('click', () => {
+                document.querySelectorAll('.word-item.copied').forEach(el => {
+                    el.classList.remove('copied');
+                });
+                document.querySelectorAll('.word-item.word-bomb-selected').forEach(el => {
+                    el.classList.remove('word-bomb-selected');
+                });
+                wordBombSelected.clear();
+            });
+            
+            toggleHistoryButton.addEventListener('click', () => {
+                const panel = historyPanel;
+                if (openPanel && openPanel === panel) {
+                    closeOpenPanel();
+                } else {
+                    closeOpenPanel();
+                    panel.classList.add('open');
+                    openPanel = panel;
+                }
+            });
+            closeHistoryButton.addEventListener('click', () => closeOpenPanel());
+            
+            statsButton.addEventListener('click', () => {
+                populateStatsModal(); 
+                statsModalOverlay.style.display = 'flex';
+            });
+            statsCloseButton.addEventListener('click', () => {
+                statsModalOverlay.style.display = 'none';
+            });
+            statsModalOverlay.addEventListener('click', (e) => {
+                if (e.target === statsModalOverlay) {
+                    statsModalOverlay.style.display = 'none';
+                }
+            });
+            
+            // --- NEW: Define Modal Listeners ---
+            defineToggleButton.addEventListener('click', () => {
+                isDefineMode = !isDefineMode;
+                if (isDefineMode) {
+                    defineToggleButton.classList.add('active');
+                    defineSearchInput.value = '';
+                    defineModalTitle.textContent = 'Define Word';
+                    document.getElementById('define-modal-summary').innerHTML = 'Type a word in the box above or click a word in the results.';
+                    document.getElementById('define-modal-full').innerHTML = '';
+                    showDefineTab('summary');
+                    defineModalOverlay.style.display = 'flex';
+                } else {
+                    defineToggleButton.classList.remove('active');
+                    defineModalOverlay.style.display = 'none';
+                }
+            });
+            defineCloseButton.addEventListener('click', () => {
+                defineModalOverlay.style.display = 'none';
+                isDefineMode = false;
+                defineToggleButton.classList.remove('active');
+            });
+            defineModalOverlay.addEventListener('click', (e) => {
+                if (e.target === defineModalOverlay) {
+                    defineModalOverlay.style.display = 'none';
+                    isDefineMode = false;
+                    defineToggleButton.classList.remove('active');
+                }
+            });
+            defineModalNav.addEventListener('click', (e) => {
+                if (e.target.classList.contains('modal-tab')) {
+                    showDefineTab(e.target.dataset.tab);
+                }
+            });
+            defineSearchForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const word = defineSearchInput.value.trim();
+                if (word) {
+                    defineWord(word);
+                }
+            });
+            
+            // --- NEW: Crazy Mode Listener ---
+            crazyModeButton.addEventListener('click', () => {
+                isCrazyMode = !isCrazyMode;
+                if (isCrazyMode) {
+                    crazyModeButton.classList.add('active');
+                    crazyModeButton.textContent = 'Crazy Mode ON 🤪';
+                } else {
+                    crazyModeButton.classList.remove('active');
+                    crazyModeButton.textContent = 'Crazy Mode 🤪';
+                }
+            });
+            
+            historySearchInput.addEventListener('input', () => {
+                updateHistoryPanel();
+            });
+            
+            // --- NEW: Prompt Page Listeners ---
+            promptPageButton.addEventListener('click', showPromptsPage);
+            promptHomeButton.addEventListener('click', showMainApp);
+            promptSort.addEventListener('change', renderPromptsList);
+            
+            promptsListContainer.addEventListener('click', (e) => {
+                const promptItem = e.target.closest('.prompt-item');
+                if (promptItem) {
+                    renderPromptWords(promptItem.dataset.prompt);
+                }
+            });
+            
+            // --- NEW: SubSearch Page Listeners ---
+            subsearchPageButton.addEventListener('click', showSubSearchPage);
+            subsearchHomeButton.addEventListener('click', showMainApp);
+            subsearchForm.addEventListener('submit', handleSubSearch);
+            
+            subsearchList.addEventListener('click', (e) => {
+                const promptItem = e.target.closest('.prompt-item');
+                if (promptItem) {
+                    renderPromptWords(promptItem.dataset.prompt);
+                }
+            });
+            
+            function showMainApp() {
+                mainAppDiv.style.display = 'flex';
+                promptsPageDiv.style.display = 'none';
+                subsearchPageDiv.style.display = 'none';
+                resultsContainer.innerHTML = '';
+                closeOpenPanel();
+            }
+            
+            function showPromptsPage() {
+                mainAppDiv.style.display = 'none';
+                subsearchPageDiv.style.display = 'none';
+                promptsPageDiv.style.display = 'block';
+                renderPromptsList();
+                closeOpenPanel();
+            }
+            
+            function showSubSearchPage() {
+                mainAppDiv.style.display = 'none';
+                promptsPageDiv.style.display = 'none';
+                subsearchPageDiv.style.display = 'block';
+                subsearchList.innerHTML = '';
+                closeOpenPanel();
+            }
+
+            function renderPromptsList() {
+                const sortBy = promptSort.value;
+                let sortedPrompts = Array.from(threeLetterPromptMap.entries());
+                
+                if (sortBy === 'count') {
+                    sortedPrompts.sort((a, b) => b[1].size - a[1].size);
+                } else {
+                    sortedPrompts.sort((a, b) => a[0].localeCompare(b[0]));
+                }
+                
+                const fragment = document.createDocumentFragment();
+                for (const [prompt, wordSet] of sortedPrompts) {
+                    const item = document.createElement('div');
+                    item.className = 'prompt-item';
+                    item.dataset.prompt = prompt;
+                    
+                    const hasCopied = Array.from(wordSet).some(word => allCopiedWords.has(word));
+                    
+                    item.innerHTML = `
+                        <div>
+                            <span class="prompt-name">${prompt}</span>
+                            <span class="prompt-info">(${wordSet.size} words)</span>
+                        </div>
+                        <span class="prompt-check" style="color: ${hasCopied ? 'var(--check-color)' : 'var(--reset-color)'};">${hasCopied ? '✓' : '✗'}</span>
+                    `;
+                    fragment.appendChild(item);
+                }
+                promptsListContainer.innerHTML = '';
+                promptsListContainer.appendChild(fragment);
+            }
+            
+            function handleSubSearch(event) {
+                if (event) event.preventDefault();
+                const targetCount = parseInt(subsearchInput.value, 10);
+                
+                if (isNaN(targetCount) || targetCount <= 0) {
+                    subsearchList.innerHTML = '<p style="color: var(--reset-color);">Please enter a valid number.</p>';
+                    return;
+                }
+                
+                const matchingPrompts = promptsByCountMap.get(targetCount) || [];
+                
+                if (matchingPrompts.length === 0) {
+                    subsearchList.innerHTML = `<p>No 3-letter prompts found with exactly ${targetCount} words.</p>`;
+                    return;
+                }
+                
+                const fragment = document.createDocumentFragment();
+                matchingPrompts.sort();
+                
+                for (const prompt of matchingPrompts) {
+                    const item = document.createElement('div');
+                    item.className = 'prompt-item';
+                    item.dataset.prompt = prompt;
+                    
+                    const wordSet = threeLetterPromptMap.get(prompt);
+                    const hasCopied = Array.from(wordSet).some(word => allCopiedWords.has(word));
+                    
+                    item.innerHTML = `
+                        <div>
+                            <span class="prompt-name">${prompt}</span>
+                            <span class="prompt-info">(${wordSet.size} words)</span>
+                        </div>
+                        <span class="prompt-check" style="color: ${hasCopied ? 'var(--check-color)' : 'var(--reset-color)'};">${hasCopied ? '✓' : '✗'}</span>
+                    `;
+                    fragment.appendChild(item);
+                }
+                subsearchList.innerHTML = '';
+                subsearchList.appendChild(fragment);
+            }
+            
+            function renderPromptWords(prompt) {
+                const wordSet = threeLetterPromptMap.get(prompt) || new Set();
+                const wordList = Array.from(wordSet);
+                const capMode = activeCapFilter;
+                
+                showMainApp();
+                resultsContainer.innerHTML = '';
+                
+                const header = document.createElement('h3');
+                header.innerHTML = `Words for: <span class="highlight">${prompt}</span>`;
+                resultsContainer.appendChild(header);
+
+                if (wordList.length === 0) {
+                    resultsContainer.innerHTML += 'No words found for this prompt.';
+                    return;
+                }
+                
+                const lenFilter = activeLengthFilter;
+                
+                let displayList;
+                if (lenFilter.mode === 'longest') {
+                    displayList = wordList.sort((a, b) => b.length - a.length);
+                } else if (lenFilter.mode === 'shortest') {
+                    displayList = wordList.sort((a, b) => a.length - b.length);
+                } else if (lenFilter.mode !== 'any') {
+                    displayList = findWords(prompt, 'none', 'none', lenFilter, []); // Re-filter by length
+                } else {
+                    displayList = wordList.sort();
+                }
+                
+                const totalMatches = displayList.length;
+                const wordsToDisplay = displayList.slice(0, MAX_RESULTS_TO_DISPLAY);
+                
+                const summary = document.createElement('div');
+                summary.id = 'results-summary';
+                summary.textContent = `Showing ${wordsToDisplay.length} of ${totalMatches} matching words.`;
+                resultsContainer.appendChild(summary);
+
+                const fragment = document.createDocumentFragment();
+                for (const originalWord of wordsToDisplay) {
+                    const wordElement = document.createElement('span');
+                    const formattedWord = applyCapping(originalWord, capMode);
+                    const highlightedHtml = highlightQuery(formattedWord, prompt);
+                    const ttsIcon = `<span class="tts-icon">🔊</span>`;
+                    const hasCopied = allCopiedWords.has(originalWord);
+                    const checkIcon = `<span class="tts-icon" style="color: ${hasCopied ? 'var(--check-color)' : 'var(--reset-color)'};">${hasCopied ? '✓' : '✗'}</span>`;
+
+                    wordElement.innerHTML = highlightedHtml + ttsIcon + checkIcon;
+                    wordElement.className = 'word-item';
+                    wordElement.dataset.originalWord = originalWord;
+                    
+                    if (hasCopied) {
+                        wordElement.classList.add('copied');
+                    }
+                    fragment.appendChild(wordElement);
+                }
+                resultsContainer.appendChild(fragment);
+            }
+
+            // --- UPDATED: Results Container Listeners ---
+            resultsContainer.addEventListener('mouseover', (e) => {
+                const target = e.target.closest('.word-item');
+                if (target) {
+                    const originalWord = target.dataset.originalWord;
+                    const tooltipText = getTooltipText(originalWord);
+                    if (tooltipText) {
+                        const rect = target.getBoundingClientRect();
+                        tooltip.textContent = tooltipText;
+                        tooltip.style.left = `${rect.left + (rect.width / 2)}px`;
+                        tooltip.style.top = `${rect.top + window.scrollY}px`;
+                        tooltip.style.display = 'block';
+                    }
+                }
+            });
+            resultsContainer.addEventListener('mouseout', (e) => {
+                if (e.target.closest('.word-item')) {
+                    tooltip.style.display = 'none';
+                }
+            });
+            
+            resultsContainer.addEventListener('click', (e) => {
+                const target = e.target;
+                const query = isSoftlocked ? softlockBuffer.trim().toLowerCase() : searchInput.value.trim().toLowerCase();
+                const uniqueFilterType = activeUniqueFilter;
+                const sortFilterType = activeSortFilter;
+                const capMode = activeCapFilter;
+                
+                if (target.classList.contains('tts-icon')) {
+                    e.stopPropagation();
+                    const formattedWord = target.closest('.word-item').textContent.replace(/🔊|📖|✓|✗/g,'').trim();
+                    speakWord(formattedWord);
+                    return;
+                }
+                
+                const wordElement = target.closest('.word-item');
+                if (wordElement) {
+                    const originalWord = wordElement.dataset.originalWord;
+                    const formattedWord = wordElement.textContent.replace(/🔊|📖|✓|✗/g,'').trim();
+                    
+                    if (isDefineMode) {
+                        defineWord(originalWord);
+                        isDefineMode = false;
+                        defineToggleButton.classList.remove('active');
+                        return;
+                    }
+                    
+                    if (uniqueFilterType === 'word-bomb') {
+                        if (wordBombSelected.has(originalWord)) {
+                            wordBombSelected.delete(originalWord);
+                            wordElement.classList.remove('word-bomb-selected');
+                        } else {
+                            wordBombSelected.add(originalWord);
+                            wordElement.classList.add('word-bomb-selected');
+                        }
+                    } else {
+                        copyToClipboard(formattedWord, originalWord, wordElement, query);
+                        addToHistory(originalWord, query, uniqueFilterType, sortFilterType, capMode);
+                    }
+                }
+            });
+            
+            resultsContainer.addEventListener('dblclick', (e) => {
+                const wordElement = e.target.closest('.word-item');
+                if (wordElement) {
+                    const originalWord = wordElement.dataset.originalWord;
+                    defineWord(originalWord);
+                }
+            });
+            
+            resultsContainer.addEventListener('contextmenu', (e) => {
+                e.preventDefault(); 
+                const wordElement = e.target.closest('.word-item');
+                if (wordElement) {
+                    const originalWord = wordElement.dataset.originalWord;
+                    if (wordBombList.has(originalWord)) {
+                        wordBombList.delete(originalWord);
+                        tooltip.textContent = `Removed "${originalWord}" from Word-Bomb!`;
+                    } else {
+                        wordBombList.add(originalWord);
+                        tooltip.textContent = `Added "${originalWord}" to Word-Bomb!`;
+                    }
+                    saveState();
+                    wordElement.style.transition = 'transform 0.1s ease-out';
+                    wordElement.style.transform = 'scale(1.1)';
+                    setTimeout(() => {
+                        wordElement.style.transform = 'scale(1)';
+                    }, 100);
+                }
+            });
+
+            // --- History Panel click listener (Unchanged) ---
+            historyContent.addEventListener('click', (e) => {
+                const target = e.target;
+                const sessionElement = target.closest('.game-session');
+                if (!sessionElement) return;
+                
+                if (target.classList.contains('rename-btn')) {
+                    const summary = target.closest('summary');
+                    const sessionNameSpan = summary.querySelector('.session-name');
+                    sessionNameSpan.contentEditable = "true";
+                    sessionNameSpan.focus();
+                    sessionNameSpan.addEventListener('blur', saveRename, { once: true });
+                    sessionNameSpan.addEventListener('keydown', (keyEvent) => {
+                        if (keyEvent.key === 'Enter') {
+                            keyEvent.preventDefault();
+                            sessionNameSpan.blur();
+                        }
+                    });
+                }
+                if (target.classList.contains('delete-session-btn')) {
+                    if (confirm('Delete this game session?')) {
+                        const sessionId = sessionElement.dataset.sessionId;
+                        gameSessions = gameSessions.filter(s => s.id.toString() !== sessionId);
+                        updateHistoryPanel();
+                        saveState();
+                    }
+                }
+                if (target.classList.contains('delete-word-btn')) {
+                    if (sessionElement.classList.contains('locked')) return;
+                    const sessionId = sessionElement.dataset.sessionId;
+                    const wordToDelete = target.dataset.word;
+                    const session = gameSessions.find(s => s.id.toString() === sessionId);
+                    if (session) {
+                        session.words = session.words.filter(item => item.word !== wordToDelete);
+                        updateHistoryPanel();
+                        saveState();
+                    }
+                }
+            });
+            function saveRename(e) {
+                const sessionNameSpan = e.target;
+                sessionNameSpan.contentEditable = "false";
+                const sessionId = sessionNameSpan.closest('.game-session').dataset.sessionId;
+                const session = gameSessions.find(s => s.id.toString() === sessionId);
+                if (session) session.name = sessionNameSpan.textContent.trim();
+                saveState();
+            }
+
+            // --- Load Saved Data & Word Files ---
+            loadState();
+            loadAndProcessFile();
+        });
+    </script>
+</body>
 </html>
