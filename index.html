@@ -1572,57 +1572,67 @@
                 resultsContainer.appendChild(fragment);
             }
 
-            // --- handleGameSearch (Unchanged) ---
             function handleGameSearch(query, uniqueFilterType, sortFilterType, lenFilter, capMode) {
-                if (query.length < 1 && permanentIncludeList.length < 1) { 
-                    resultsContainer.textContent = 'Game Mode: Please enter letters to search.';
-                    return;
-                }
-                if (!currentGameSession) {
-                    resultsContainer.textContent = 'Error: No active game session.';
-                    return;
-                }
-                const usedWordsInThisGame = new Set(currentGameSession.words.map(item => item.word));
-                const unusedMatches = findWords(query, uniqueFilterType, sortFilterType, lenFilter, Array.from(usedWordsInThisGame));
-
-                if (unusedMatches.length === 0) {
-                    resultsContainer.textContent = `No *new* words found.`;
-                    return;
-                }
-                
-                let finalCandidates = unusedMatches;
-                
-                let tieBreakerList = [];
-                if (uniqueFilterType === 'by-countries' || uniqueFilterType === 'names') {
-                    tieBreakerList = finalCandidates;
-                }
-                else if(sortFilterType === 'longest' || lenFilter === 'longest') {
-                    const best = finalCandidates[0].length;
-                    tieBreakerList = finalCandidates.filter(w => w.length === best);
-                } else if (sortFilterType === 'shortest' || lenFilter === 'shortest') {
-                    const best = finalCandidates[0].length;
-                    tieBreakerList = finalCandidates.filter(w => w.length === best);
-                } else if (sortFilterType === 'common') {
-                    const best = wordFrequencyMap.get(finalCandidates[0]);
-                    tieBreakerList = finalCandidates.filter(w => wordFrequencyMap.get(w) === best);
-                } else if (sortFilterType === 'least-common') {
-                    const best = wordFrequencyMap.get(finalCandidates[0]);
-                    tieBreakerList = finalCandidates.filter(w => wordFrequencyMap.get(w) === best);
-                } else {
-                    tieBreakerList = finalCandidates;
-                }
-                
-                if(tieBreakerList.length === 0) {
-                     resultsContainer.textContent = `No *new* words found for that combo.`;
-                    return;
-                }
-
-                const randomWord = tieBreakerList[Math.floor(Math.random() * tieBreakerList.length)];
-                const formattedWord = applyCapping(randomWord, capMode);
-                
-                copyToClipboard(formattedWord, randomWord, null, query);
-                addToHistory(randomWord, query, uniqueFilterType, sortFilterType, capMode);
-            }
+                            if (query.length < 1 && permanentIncludeList.length < 1) { 
+                                resultsContainer.textContent = 'Game Mode: Please enter letters to search.';
+                                return;
+                            }
+                            if (!currentGameSession) {
+                                resultsContainer.textContent = 'Error: No active game session.';
+                                return;
+                            }
+                            
+                            // Get words already used in this session to exclude them
+                            const usedWordsInThisGame = new Set(currentGameSession.words.map(item => item.word));
+                            
+                            // 1. Find matches based on current filters (Animals, etc.)
+                            let matches = findWords(query, uniqueFilterType, sortFilterType, lenFilter, Array.from(usedWordsInThisGame));
+            
+                            // 2. SAFETY FILTER: Ensure word is Single Word AND exists in Master Dictionary
+                            // This prevents "ice cream" (spaces) or obscure list-only words from appearing in Game Mode.
+                            matches = matches.filter(word => {
+                                const isSingleWord = !word.includes(' ') && !word.includes('-');
+                                const existsInMaster = masterWordSet.has(word);
+                                return isSingleWord && existsInMaster;
+                            });
+            
+                            if (matches.length === 0) {
+                                resultsContainer.textContent = `No valid *new* words found (checked intersection with Master Dictionary).`;
+                                return;
+                            }
+                            
+                            // 3. Apply Sorting/Tie-Breakers
+                            let tieBreakerList = matches;
+                            
+                            if (uniqueFilterType === 'by-countries' || uniqueFilterType === 'names') {
+                                tieBreakerList = matches;
+                            }
+                            else if(sortFilterType === 'longest' || lenFilter === 'longest') {
+                                const best = matches[0].length;
+                                tieBreakerList = matches.filter(w => w.length === best);
+                            } else if (sortFilterType === 'shortest' || lenFilter === 'shortest') {
+                                const best = matches[0].length;
+                                tieBreakerList = matches.filter(w => w.length === best);
+                            } else if (sortFilterType === 'common') {
+                                const best = wordFrequencyMap.get(matches[0]);
+                                tieBreakerList = matches.filter(w => wordFrequencyMap.get(w) === best);
+                            } else if (sortFilterType === 'least-common') {
+                                const best = wordFrequencyMap.get(matches[0]);
+                                tieBreakerList = matches.filter(w => wordFrequencyMap.get(w) === best);
+                            }
+                            
+                            if(tieBreakerList.length === 0) {
+                                 resultsContainer.textContent = `No *new* words found for that combo.`;
+                                 return;
+                            }
+            
+                            // 4. Pick a random word and Copy
+                            const randomWord = tieBreakerList[Math.floor(Math.random() * tieBreakerList.length)];
+                            const formattedWord = applyCapping(randomWord, capMode);
+                            
+                            copyToClipboard(formattedWord, randomWord, null, query);
+                            addToHistory(randomWord, query, uniqueFilterType, sortFilterType, capMode);
+                        }
             
             // --- NEW: Define Word Function (with Fallback) ---
             async function defineWord(word) {
