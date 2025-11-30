@@ -562,10 +562,11 @@
 
     <div id="header-bar">
         <h1>Word Finder</h1>
-        <div id="utility-bar">
             <div id="utility-bar-left">
                 <button id="prompt-page-button" class="btn">Prompts 🔎</button>
                 <button id="subsearch-page-button" class="btn">Sub-Search #</button>
+                <button id="translator-page-button" class="btn">Translator 🌐</button>
+                
                 <button id="crazy-mode-button" class="btn">Crazy Mode 🤪</button> 
             </div>
             <button id="stats-button" class="btn">Stats 📊</button>
@@ -624,6 +625,67 @@
             </form>
             <div id="subsearch-results-list">
                 </div>
+        </div>
+                <div id="translator-page" class="card" style="display: none;">
+            <div id="translator-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <h2>Free Translator</h2>
+                <button id="translator-home-button" class="btn">Return Home</button>
+            </div>
+            
+            <div class="filter-group" style="margin-bottom: 1rem;">
+                <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                    <label>From:</label>
+                    <select id="trans-source-lang" style="padding: 5px; border-radius: 4px; background: var(--input-bg-color); color: var(--text-color); border: 1px solid var(--history-border);">
+                        <option value="Autodetect">Auto-Detect</option>
+                        <option value="en">English</option>
+                        <option value="es">Spanish</option>
+                        <option value="fr">French</option>
+                        <option value="de">German</option>
+                        <option value="it">Italian</option>
+                        <option value="pt">Portuguese</option>
+                        <option value="ru">Russian</option>
+                        <option value="ja">Japanese</option>
+                        <option value="zh">Chinese</option>
+                        <option value="ko">Korean</option>
+                        <option value="ar">Arabic</option>
+                        <option value="hi">Hindi</option>
+                        <option value="he">Hebrew</option>
+                    </select>
+                    
+                    <span style="font-weight: bold;">→</span>
+                    
+                    <label>To:</label>
+                    <select id="trans-target-lang" style="padding: 5px; border-radius: 4px; background: var(--input-bg-color); color: var(--text-color); border: 1px solid var(--history-border);">
+                        <option value="en" selected>English</option>
+                        <option value="es">Spanish</option>
+                        <option value="fr">French</option>
+                        <option value="de">German</option>
+                        <option value="it">Italian</option>
+                        <option value="pt">Portuguese</option>
+                        <option value="ru">Russian</option>
+                        <option value="ja">Japanese</option>
+                        <option value="zh">Chinese</option>
+                        <option value="ko">Korean</option>
+                        <option value="ar">Arabic</option>
+                        <option value="hi">Hindi</option>
+                        <option value="he">Hebrew</option>
+                    </select>
+                    
+                    <button id="trans-action-btn" class="btn">Translate</button>
+                </div>
+            </div>
+        
+            <div class="translator-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                <div style="display: flex; flex-direction: column;">
+                    <label style="margin-bottom: 5px; color: var(--text-muted-color);">Input Text:</label>
+                    <textarea id="trans-input" placeholder="Type here..." style="width: 100%; height: 150px; padding: 10px; border-radius: 8px; border: 1px solid var(--history-border); background: var(--input-bg-color); color: var(--text-color); resize: vertical; box-sizing: border-box;"></textarea>
+                </div>
+                <div style="display: flex; flex-direction: column;">
+                    <label style="margin-bottom: 5px; color: var(--text-muted-color);">Translation:</label>
+                    <div id="trans-output" style="width: 100%; height: 150px; padding: 10px; border-radius: 8px; border: 1px solid var(--history-border); background: var(--history-box-bg); color: var(--text-color); overflow-y: auto; box-sizing: border-box;"></div>
+                </div>
+            </div>
+            <div style="margin-top: 10px; font-size: 0.8rem; color: var(--text-muted-color); text-align: right;">Powered by MyMemory API</div>
         </div>
     </div>
     
@@ -813,6 +875,69 @@
             const subsearchInput = document.getElementById('subsearch-input');
             const subsearchList = document.getElementById('subsearch-results-list');
             const crazyModeButton = document.getElementById('crazy-mode-button');
+                    // --- TRANSLATOR LOGIC ---
+            const translatorPageButton = document.getElementById('translator-page-button');
+            const translatorPageDiv = document.getElementById('translator-page');
+            const translatorHomeButton = document.getElementById('translator-home-button');
+            const transActionBtn = document.getElementById('trans-action-btn');
+            const transInput = document.getElementById('trans-input');
+            const transOutput = document.getElementById('trans-output');
+            const transSourceLang = document.getElementById('trans-source-lang');
+            const transTargetLang = document.getElementById('trans-target-lang');
+        
+            translatorPageButton.addEventListener('click', () => {
+                mainAppDiv.style.display = 'none';
+                promptsPageDiv.style.display = 'none';
+                subsearchPageDiv.style.display = 'none';
+                translatorPageDiv.style.display = 'block';
+            });
+        
+            translatorHomeButton.addEventListener('click', showMainApp);
+        
+            transActionBtn.addEventListener('click', async () => {
+                const text = transInput.value.trim();
+                if (!text) {
+                    transOutput.innerHTML = '<span style="color: var(--exclude-color)">Please enter text to translate.</span>';
+                    return;
+                }
+                
+                transOutput.innerHTML = '<em>Translating...</em>';
+                
+                const source = transSourceLang.value;
+                const target = transTargetLang.value;
+                // MyMemory format: "source|target" (e.g., "en|it" or "Autodetect|it")
+                const langPair = `${source}|${target}`;
+                
+                try {
+                    const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${langPair}`;
+                    const res = await fetch(url);
+                    const data = await res.json();
+                    
+                    if (data.responseStatus === 200 || data.responseStatus === '200') {
+                        transOutput.innerText = data.responseData.translatedText;
+                        
+                        // Show detected language if we used Autodetect
+                        if (source === 'Autodetect' && data.matches && data.matches.length > 0) {
+                             // Sometimes the API returns the detected match info
+                             console.log("Detected match:", data.matches[0]);
+                        }
+                    } else {
+                        transOutput.innerText = "Error: " + data.responseDetails;
+                    }
+                } catch (e) {
+                    transOutput.innerText = "Connection Error: " + e.message;
+                }
+            });
+        
+            // --- UPDATE EXISTING FUNCTION ---
+            // You must update your 'showMainApp' function to hide the translator page too
+            window.showMainApp = function() { // (Overwriting the previous function reference)
+                mainAppDiv.style.display = 'flex';
+                promptsPageDiv.style.display = 'none';
+                subsearchPageDiv.style.display = 'none';
+                translatorPageDiv.style.display = 'none'; // Added this line
+                resultsContainer.innerHTML = '';
+            };
 
             // --- State Variables ---
             let masterWordSet = new Set();
