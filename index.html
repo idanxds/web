@@ -1563,30 +1563,50 @@
                 updateHistoryPanel();
             }
 
-            // --- handleSearch (Main routing) (Updated) ---
             function handleSearch(event) {
-                if (event) event.preventDefault();
-                const query = isSoftlocked ? softlockBuffer.trim().toLowerCase() : searchInput.value.trim().toLowerCase();
-                
-                if (isCrazyMode) {
-                    runCrazySearch(query);
-                    return; // Crazy mode handles its own search
+                    if (event) event.preventDefault();
+                    
+                    const query = isSoftlocked ? softlockBuffer.trim().toLowerCase() : searchInput.value.trim().toLowerCase();
+            
+                    // --- NEW: Intercept for Word Bomb Add Mode ---
+                    if (isWordBombAddMode) {
+                        if (query.length > 0) {
+                            if (wordBombList.has(query)) {
+                                resultsContainer.innerHTML = `<span style="color: var(--game-mode-color)">"${query}"</span> is already in your Word Bomb list.`;
+                            } else {
+                                wordBombList.add(query);
+                                saveState(); // Save to local storage immediately
+                                resultsContainer.innerHTML = `
+                                    <p>Added <span style="color: var(--check-color); font-weight: bold; font-size: 1.2rem;">"${query}"</span> to Word Bomb List!</p>
+                                    <p>Total Words in List: ${wordBombList.size}</p>
+                                `;
+                            }
+                            searchInput.value = ''; // Clear input for the next word
+                        }
+                        return; // Stop here, do not run normal search
+                    }
+                    // ---------------------------------------------
+            
+                    if (isCrazyMode) {
+                        runCrazySearch(query);
+                        return; 
+                    }
+                    
+                    const uniqueFilterType = uniqueFilter.value;
+                    const sortFilterType = searchFilter.value;
+                    const lenFilter = lengthFilter.value;
+                    const capMode = getEffectiveCapMode();
+                    
+                    if (isGameMode) {
+                        handleGameSearch(query, uniqueFilterType, sortFilterType, lenFilter, capMode);
+                    } else {
+                        handleNormalSearch(query, uniqueFilterType, sortFilterType, lenFilter, capMode);
+                    }
+                    
+                    if(isSoftlocked) {
+                        softlockBuffer = "";
+                    }
                 }
-                
-                const uniqueFilterType = uniqueFilter.value;
-                const sortFilterType = searchFilter.value;
-                const lenFilter = lengthFilter.value;
-                const capMode = getEffectiveCapMode();
-                
-                if (isGameMode) {
-                    handleGameSearch(query, uniqueFilterType, sortFilterType, lenFilter, capMode);
-                } else {
-                    handleNormalSearch(query, uniqueFilterType, sortFilterType, lenFilter, capMode);
-                }
-                if(isSoftlocked) {
-                    softlockBuffer = "";
-                }
-            }
             
             // --- NEW: Crazy Search Function ---
             function runCrazySearch(query) {
@@ -1643,7 +1663,39 @@
                     handleNormalSearch(query, uniqueFilterType, sortFilterType, lenFilter, capMode, foundWordsList);
                 }
             }
+        // --- WORD BOMB ADD MODE LOGIC ---
+    const wbAddModeButton = document.getElementById('wb-add-mode-button');
+    let isWordBombAddMode = false;
+
+    wbAddModeButton.addEventListener('click', () => {
+        isWordBombAddMode = !isWordBombAddMode;
+        
+        if (isWordBombAddMode) {
+            wbAddModeButton.classList.add('active');
+            wbAddModeButton.textContent = 'Adding to WB... (Type & Enter)';
+            wbAddModeButton.style.backgroundColor = "var(--exclude-color)"; // Red indication
             
+            // Visual feedback
+            searchInput.placeholder = "Type word & Press Enter to ADD";
+            searchInput.focus();
+            resultsContainer.innerHTML = `
+                <h3>Word Bomb Add Mode Active</h3>
+                <p>Type any word in the search box and press <strong>Enter</strong> to add it to your Word Bomb list.</p>
+                <p>Current List Size: ${wordBombList.size}</p>
+            `;
+            
+            // Turn off other modes to avoid confusion
+            if (isCrazyMode) crazyModeButton.click();
+            if (isDefineMode) defineToggleButton.click();
+            
+        } else {
+            wbAddModeButton.classList.remove('active');
+            wbAddModeButton.textContent = 'WB Add Mode 💣';
+            wbAddModeButton.style.backgroundColor = ""; // Reset color
+            searchInput.placeholder = "e.g., s_a_e";
+            resultsContainer.innerHTML = 'Add Mode Deactivated.';
+        }
+    });
             // --- getTooltipText (Unchanged) ---
             function getTooltipText(word) {
                 const freq = wordFrequencyMap.get(word) || 'N/A';
