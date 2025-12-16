@@ -11,11 +11,11 @@
     <style>
         :root {
             /* Dark Theme (Default) */
-            --bg-color: #1a1c2c; --box-color: #252a41; --input-bg-color: #3b4262;
+            --bg-color: #1a1c2c;
+            --box-color: #252a41; --input-bg-color: #3b4262;
             --text-color: #e0e0e0; --text-muted-color: #9ab; --header-color: #ffffff;
             --primary-color: #00bcd4; --secondary-color: #0097a7;
             --history-bg: #1e2236; --history-box-bg: #2f3653; --history-border: #3b4262;
-            
             --copied-color-start: #84ffff; --copied-color-end: #00e5ff;
             
             --game-mode-color: #ffc107; --reset-color: #ff5252;
@@ -25,15 +25,18 @@
         }
         
         body.light-theme {
-            --bg-color: #f4f7f6; --box-color: #ffffff; --input-bg-color: #ffffff;
+            --bg-color: #f4f7f6;
+            --box-color: #ffffff; --input-bg-color: #ffffff;
             --text-color: #333; --text-muted-color: #777; --header-color: #1a535c;
             --primary-color: #1a535c; --secondary-color: #4ecdc4;
             --history-bg: #333; --history-text: #fff;
-            --history-box-bg: #444; --history-border: #555;
+            --history-box-bg: #444;
+            --history-border: #555;
         }
         
         body.retro-theme {
-            --bg-color: #000000; --box-color: #0d0d0d; --input-bg-color: #222;
+            --bg-color: #000000;
+            --box-color: #0d0d0d; --input-bg-color: #222;
             --text-color: #00FF00; --text-muted-color: #00FF00;
             --header-color: #00FF00; --primary-color: #00FF00;
             --secondary-color: #00FF00; --history-bg: #0a0a0a;
@@ -52,8 +55,10 @@
             margin: 0; padding: 2rem;
             transition: background-color 0.3s, color 0.3s;
             display: grid;
-            grid-template-columns: 1fr 320px; /* Main content | Sidebar */
-            grid-template-rows: auto 1fr; /* Header | Content */
+            grid-template-columns: 1fr 320px;
+            /* Main content | Sidebar */
+            grid-template-rows: auto 1fr;
+            /* Header | Content */
             grid-template-areas: 
                 "header header"
                 "main sidebar";
@@ -71,7 +76,7 @@
         }
         
         h1 { 
-            color: var(--header-color); 
+            color: var(--header-color);
             font-weight: 700; 
             margin: 0;
         }
@@ -122,18 +127,21 @@
             gap: 10px;
         }
         #search-input {
-            font-size: 1rem; padding: 0.75rem; border: 1px solid var(--history-border);
+            font-size: 1rem;
+            padding: 0.75rem; border: 1px solid var(--history-border);
             border-radius: 8px; background-color: var(--input-bg-color);
             color: var(--text-color); flex-grow: 1;
         }
-        #search-button { font-weight: 600; padding: 0.75rem 1rem; }
+        #search-button { font-weight: 600; padding: 0.75rem 1rem;
+        }
         
         #filter-grid {
             display: grid;
             grid-template-columns: 1fr; /* Stack all filters */
             gap: 15px;
         }
-        .filter-group { display: flex; flex-direction: column; gap: 5px; }
+        .filter-group { display: flex; flex-direction: column; gap: 5px;
+        }
         .filter-group label {
             font-size: 0.9rem;
             font-weight: 600;
@@ -147,17 +155,23 @@
         }
 
         button, .btn {
-            font-size: 0.9rem; padding: 0.6rem 0.8rem; border: none;
+            font-size: 0.9rem;
+            padding: 0.6rem 0.8rem; border: none;
             border-radius: 4px; background-color: var(--primary-color);
             color: white; cursor: pointer;
             transition: background-color 0.2s; white-space: nowrap;
         }
-        button:hover, .btn:hover { background-color: var(--secondary-color); }
+        button:hover, .btn:hover { background-color: var(--secondary-color);
+        }
         
-        .add-btn { padding: 3px 8px; font-size: 1rem; line-height: 1; }
-        #add-include-button { background-color: var(--include-color); }
-        #add-exclude-button { background-color: var(--exclude-color); }
-        #softlock-button { background-color: #9b59b6; }
+        .add-btn { padding: 3px 8px;
+            font-size: 1rem; line-height: 1; }
+        #add-include-button { background-color: var(--include-color);
+        }
+        #add-exclude-button { background-color: var(--exclude-color);
+        }
+        #softlock-button { background-color: #9b59b6;
+        }
         
         #define-toggle-button.active, #crazy-mode-button.active {
             background-color: var(--define-color);
@@ -170,16 +184,23 @@
             animation: pulse 1.5s infinite;
         }
         @keyframes pulse {
-            0% { box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.7); }
-            70% { box-shadow: 0 0 0 10px rgba(255, 193, 7, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(255, 193, 7, 0); }
+            0% { box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.7);
+            }
+            70% { box-shadow: 0 0 0 10px rgba(255, 193, 7, 0);
+            }
+            100% { box-shadow: 0 0 0 0 rgba(255, 193, 7, 0);
+            }
         }
         @keyframes pulse-define {
-            0% { box-shadow: 0 0 0 0 rgba(155, 89, 182, 0.7); }
-            70% { box-shadow: 0 0 0 10px rgba(155, 89, 182, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(155, 89, 182, 0); }
+            0% { box-shadow: 0 0 0 0 rgba(155, 89, 182, 0.7);
+            }
+            70% { box-shadow: 0 0 0 10px rgba(155, 89, 182, 0);
+            }
+            100% { box-shadow: 0 0 0 0 rgba(155, 89, 182, 0);
+            }
         }
-        #loading-message { font-style: italic; color: var(--text-muted-color); }
+        #loading-message { font-style: italic;
+            color: var(--text-muted-color); }
         
         /* Include/Exclude Tags */
         #filter-lists-container {
@@ -188,25 +209,31 @@
             gap: 1.5rem;
         }
         .filter-list h3 {
-            margin-top: 0; margin-bottom: 10px; font-size: 1rem;
+            margin-top: 0;
+            margin-bottom: 10px; font-size: 1rem;
             color: var(--text-color); display: flex;
             justify-content: space-between; align-items: center;
             border-bottom: 2px solid var(--history-border);
             padding-bottom: 8px;
         }
         #include-list-tags, #exclude-list-tags {
-            display: flex; flex-wrap: wrap;
+            display: flex;
+            flex-wrap: wrap;
             gap: 5px; min-height: 30px;
         }
         .filter-tag {
-            display: inline-flex; align-items: center;
+            display: inline-flex;
+            align-items: center;
             padding: 5px 10px; border-radius: 15px;
             font-size: 0.9rem; font-weight: 500;
         }
-        .filter-tag-include { background-color: var(--include-color); color: white; }
-        .filter-tag-exclude { background-color: var(--exclude-color); color: white; }
+        .filter-tag-include { background-color: var(--include-color); color: white;
+        }
+        .filter-tag-exclude { background-color: var(--exclude-color); color: white;
+        }
         .remove-tag-btn {
-            background: none; border: none;
+            background: none;
+            border: none;
             color: white; font-weight: bold;
             font-size: 1.1rem; margin-left: 5px;
             cursor: pointer; padding: 0 5px;
@@ -214,7 +241,7 @@
 
         /* Results Container */
         #results-container { 
-            text-align: center; 
+            text-align: center;
             margin-top: 0;
             flex-grow: 1;
             overflow-y: auto;
@@ -227,7 +254,8 @@
             color: var(--text-muted-color);
         }
         .word-item {
-            display: inline-block; padding: 0.3rem 0.6rem; margin: 0.2rem;
+            display: inline-block;
+            padding: 0.3rem 0.6rem; margin: 0.2rem;
             background-color: var(--word-bg-color); color: var(--word-text-color);
             border-radius: 4px; cursor: pointer;
             transition: all 0.2s;
@@ -254,10 +282,12 @@
             transition: opacity 0.2s;
             cursor: pointer;
         }
-        .word-item:hover .tts-icon { opacity: 1; }
+        .word-item:hover .tts-icon { opacity: 1;
+        }
         
         #word-tooltip {
-            position: absolute; display: none;
+            position: absolute;
+            display: none;
             padding: 5px 10px; background-color: #333;
             color: white; border-radius: 4px;
             font-size: 0.8rem; white-space: nowrap;
@@ -267,7 +297,8 @@
         
         /* History Panel */
         #history-panel {
-            position: fixed; top: 0; right: 0; width: 300px; height: 100%;
+            position: fixed;
+            top: 0; right: 0; width: 300px; height: 100%;
             background-color: var(--history-bg); color: var(--history-text);
             padding: 1rem;
             box-shadow: -4px 0 12px rgba(0, 0, 0, 0.2);
@@ -275,7 +306,8 @@
             transition: transform 0.3s ease-in-out, background-color 0.3s;
             z-index: 1000; box-sizing: border-box;
         }
-        #history-panel.open { transform: translateX(0); }
+        #history-panel.open { transform: translateX(0);
+        }
         #history-panel h2 {
             border-bottom: 2px solid var(--secondary-color);
             padding-bottom: 10px; margin-top: 0;
@@ -295,39 +327,51 @@
             overflow-y: auto;
             list-style: none; padding: 0;
         }
-        .highlight { font-weight: bold; color: var(--secondary-color); }
+        .highlight { font-weight: bold; color: var(--secondary-color);
+        }
         .game-session {
-            background: var(--history-box-bg); border-radius: 5px;
+            background: var(--history-box-bg);
+            border-radius: 5px;
             margin-bottom: 10px; border: 1px solid var(--history-border);
         }
-        .game-session.locked summary { color: #999; }
+        .game-session.locked summary { color: #999;
+        }
         .game-session summary {
-            padding: 10px; cursor: pointer; font-weight: bold;
+            padding: 10px;
+            cursor: pointer; font-weight: bold;
             display: flex; justify-content: space-between; align-items: center;
         }
         .session-name {
-            display: inline-block; padding: 2px 5px;
+            display: inline-block;
+            padding: 2px 5px;
             border-radius: 3px; border: 1px solid transparent;
         }
         .session-name[contenteditable="true"] {
-            background: #fff; color: #333;
+            background: #fff;
+            color: #333;
             border: 1px solid var(--secondary-color); outline: none;
         }
-        .session-controls { display: inline-flex; gap: 5px; }
+        .session-controls { display: inline-flex;
+            gap: 5px; }
         .session-controls .btn {
-            font-size: 0.7rem; padding: 3px 5px; background: #666;
+            font-size: 0.7rem;
+            padding: 3px 5px; background: #666;
         }
-        .session-controls .btn:hover { background: #888; }
+        .session-controls .btn:hover { background: #888;
+        }
         .session-word-list {
-            list-style: none; padding: 0 10px 10px 10px;
+            list-style: none;
+            padding: 0 10px 10px 10px;
             background: var(--history-bg); max-height: 200px; overflow-y: auto;
         }
         .session-word-list li {
-            padding: 5px 0; border-bottom: 1px dotted var(--history-border);
+            padding: 5px 0;
+            border-bottom: 1px dotted var(--history-border);
             display: flex; justify-content: space-between; align-items: center;
             word-wrap: break-word; overflow-wrap: break-word; width: 100%;
         }
-        .session-word-list li span { max-width: 80%; }
+        .session-word-list li span { max-width: 80%;
+        }
         .history-word-info {
             font-size: 0.8rem;
             opacity: 0.7;
@@ -335,13 +379,17 @@
             margin-left: 10px;
         }
         .delete-word-btn {
-            background: none; border: none; color: #ff5252;
+            background: none;
+            border: none; color: #ff5252;
             cursor: pointer; font-size: 1rem; padding: 0 5px;
         }
-        .game-session.locked .delete-word-btn { display: none; }
-        .history-divider { margin: 15px 0; border-top: 1px solid #777; }
+        .game-session.locked .delete-word-btn { display: none;
+        }
+        .history-divider { margin: 15px 0; border-top: 1px solid #777;
+        }
         .history-item {
-            margin-bottom: 15px; padding-bottom: 5px;
+            margin-bottom: 15px;
+            padding-bottom: 5px;
             border-bottom: 1px dotted var(--history-border); word-wrap: break-word;
         }
         
@@ -471,14 +519,16 @@
             margin-bottom: 1rem;
         }
         #define-search-input {
-            font-size: 1rem; padding: 0.5rem; border: 1px solid var(--history-border);
+            font-size: 1rem;
+            padding: 0.5rem; border: 1px solid var(--history-border);
             border-radius: 8px; background-color: var(--input-bg-color);
             color: var(--text-color); flex-grow: 1;
         }
         
         /* --- Prompts/SubSearch Page CSS --- */
         #prompts-page, #subsearch-page {
-            display: none; /* Hidden by default */
+            display: none;
+            /* Hidden by default */
             width: 100%;
             margin-top: 0;
         }
@@ -494,7 +544,8 @@
             margin: 10px 0;
         }
         #subsearch-input {
-            font-size: 1rem; padding: 0.5rem; border: 1px solid var(--history-border);
+            font-size: 1rem;
+            padding: 0.5rem; border: 1px solid var(--history-border);
             border-radius: 8px; background-color: var(--input-bg-color);
             color: var(--text-color);
             width: 100px;
@@ -550,11 +601,19 @@
             }
         }
         @media (max-width: 600px) {
-            body { padding: 1rem; }
-            .card { padding: 1rem; }
-            #sidebar-column { grid-template-columns: 1fr; }
-            #history-panel { width: 90%; }
-            h1 { font-size: 1.8rem; }
+            body { padding: 1rem;
+            }
+            .card { padding: 1rem;
+            }
+            #sidebar-column { grid-template-columns: 1fr;
+            }
+            #history-panel { width: 90%;
+            }
+            h1 { font-size: 1.8rem;
+            }
+            .translator-grid {
+                grid-template-columns: 1fr !important;
+            }
         }
     </style>
 </head>
@@ -562,11 +621,11 @@
 
     <div id="header-bar">
         <h1>Word Finder</h1>
+        <div id="utility-bar">
             <div id="utility-bar-left">
                 <button id="prompt-page-button" class="btn">Prompts 🔎</button>
                 <button id="subsearch-page-button" class="btn">Sub-Search #</button>
                 <button id="translator-page-button" class="btn">Translator 🌐</button>
-                <button id="wb-add-mode-button" class="btn">WB Add Mode 💣</button>
                 <button id="crazy-mode-button" class="btn">Crazy Mode 🤪</button> 
             </div>
             <button id="stats-button" class="btn">Stats 📊</button>
@@ -574,6 +633,7 @@
             <button id="game-toggle-button" class="btn">Start Game</button>
             <button id="softlock-button" class="btn" style="display: none;">Softlock</button>
             <button id="define-toggle-button" class="btn">Define Word 📖</button>
+    
             <button id="reset-button" class="btn">Reset Colors</button>
             <button id="toggle-history-button" class="btn">History (0)</button>
         </div>
@@ -583,7 +643,7 @@
         <div id="main-app">
             <div class="card" id="search-card">
                 <form id="search-form">
-                    <div id="search-main">
+                     <div id="search-main" style="display: flex; width: 100%; gap: 10px;">
                         <input type="text" id="search-input" placeholder="e.g., s_a_e" required autocomplete="off">
                         <button type="submit" id="search-button">Find</button>
                     </div>
@@ -626,7 +686,8 @@
             <div id="subsearch-results-list">
                 </div>
         </div>
-                <div id="translator-page" class="card" style="display: none;">
+
+        <div id="translator-page" class="card" style="display: none;">
             <div id="translator-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
                 <h2>Free Translator</h2>
                 <button id="translator-home-button" class="btn">Return Home</button>
@@ -687,6 +748,7 @@
             </div>
             <div style="margin-top: 10px; font-size: 0.8rem; color: var(--text-muted-color); text-align: right;">Powered by MyMemory API</div>
         </div>
+
     </div>
     
     <div id="sidebar-column">
@@ -700,7 +762,7 @@
                         <option value="v-c-pattern">V/C Pattern (v/c)</option>
                         <option value="anagram">Anagram</option>
                         <option value="include-all">Include All Letters</option>
-                        <option value="word-bomb">Word-Bomb List</option>
+                        <option value="word-bomb">Word-Bomb List (wb_list.txt)</option>
                         <hr>
                         <option value="bad">Bad / Explicit</option>
                         <option value="brands">Brands</option>
@@ -733,7 +795,7 @@
                         <option value="least-common">Least Common</option>
                     </select>
                 </div>
-                
+            
                 <div class="filter-group">
                     <label for="length-filter">Length:</label>
                     <select id="length-filter">
@@ -789,7 +851,7 @@
             <div class="stat-item">Total Words Copied: <strong id="stat-total-copied">0</strong></div>
             <div class="stat-item">Game Sessions Played: <strong id="stat-game-sessions">0</strong></div>
             <div class="stat-item">Avg. Words per Game: <strong id="stat-avg-words-game">0</strong></div>
-            
+        
             <button id="stats-close-button" class="btn" style="width: 100%; margin-top: 1.5rem;">Close</button>
         </div>
     </div>
@@ -875,69 +937,6 @@
             const subsearchInput = document.getElementById('subsearch-input');
             const subsearchList = document.getElementById('subsearch-results-list');
             const crazyModeButton = document.getElementById('crazy-mode-button');
-                    // --- TRANSLATOR LOGIC ---
-            const translatorPageButton = document.getElementById('translator-page-button');
-            const translatorPageDiv = document.getElementById('translator-page');
-            const translatorHomeButton = document.getElementById('translator-home-button');
-            const transActionBtn = document.getElementById('trans-action-btn');
-            const transInput = document.getElementById('trans-input');
-            const transOutput = document.getElementById('trans-output');
-            const transSourceLang = document.getElementById('trans-source-lang');
-            const transTargetLang = document.getElementById('trans-target-lang');
-        
-            translatorPageButton.addEventListener('click', () => {
-                mainAppDiv.style.display = 'none';
-                promptsPageDiv.style.display = 'none';
-                subsearchPageDiv.style.display = 'none';
-                translatorPageDiv.style.display = 'block';
-            });
-        
-            translatorHomeButton.addEventListener('click', showMainApp);
-        
-            transActionBtn.addEventListener('click', async () => {
-                const text = transInput.value.trim();
-                if (!text) {
-                    transOutput.innerHTML = '<span style="color: var(--exclude-color)">Please enter text to translate.</span>';
-                    return;
-                }
-                
-                transOutput.innerHTML = '<em>Translating...</em>';
-                
-                const source = transSourceLang.value;
-                const target = transTargetLang.value;
-                // MyMemory format: "source|target" (e.g., "en|it" or "Autodetect|it")
-                const langPair = `${source}|${target}`;
-                
-                try {
-                    const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${langPair}`;
-                    const res = await fetch(url);
-                    const data = await res.json();
-                    
-                    if (data.responseStatus === 200 || data.responseStatus === '200') {
-                        transOutput.innerText = data.responseData.translatedText;
-                        
-                        // Show detected language if we used Autodetect
-                        if (source === 'Autodetect' && data.matches && data.matches.length > 0) {
-                             // Sometimes the API returns the detected match info
-                             console.log("Detected match:", data.matches[0]);
-                        }
-                    } else {
-                        transOutput.innerText = "Error: " + data.responseDetails;
-                    }
-                } catch (e) {
-                    transOutput.innerText = "Connection Error: " + e.message;
-                }
-            });
-        
-            // --- UPDATE EXISTING FUNCTION ---
-            // You must update your 'showMainApp' function to hide the translator page too
-            window.showMainApp = function() { // (Overwriting the previous function reference)
-                mainAppDiv.style.display = 'flex';
-                promptsPageDiv.style.display = 'none';
-                subsearchPageDiv.style.display = 'none';
-                translatorPageDiv.style.display = 'none'; // Added this line
-                resultsContainer.innerHTML = '';
-            };
 
             // --- State Variables ---
             let masterWordSet = new Set();
@@ -1009,7 +1008,6 @@
                 if (query) queriesToHighlight.push(query);
                 
                 const filterType = uniqueFilter.value;
-
                 if (filterType !== 'include-all') {
                     permanentIncludeList.forEach(item => queriesToHighlight.push(item));
                 }
@@ -1017,7 +1015,6 @@
                 const safeQueries = queriesToHighlight
                     .filter(q => q && q.length > 0)
                     .map(escapeRegExp);
-                
                 if (safeQueries.length > 0) {
                     const regex = new RegExp(`(${safeQueries.join('|')})`, 'gi');
                     highlightedWord = word.replace(regex, '<span class="highlight">$1</span>');
@@ -1026,8 +1023,8 @@
                 
                 if (filterType === 'pattern' && query) {
                      try {
-                        const queryPattern = query.replace(/_/g, '.');
-                        highlightedWord = highlightedWord.replace(new RegExp(`(${queryPattern})`, 'gi'), (match) => {
+                         const queryPattern = query.replace(/_/g, '.');
+                         highlightedWord = highlightedWord.replace(new RegExp(`(${queryPattern})`, 'gi'), (match) => {
                             let highlightedMatch = '';
                             for(let i = 0; i < match.length; i++) {
                                 let char = match[i];
@@ -1098,7 +1095,7 @@
                     localStorage.setItem('wordFinderGameSessions', JSON.stringify(gameSessions));
                     localStorage.setItem('wordFinderCopyCounts', JSON.stringify(Array.from(wordCopyCountMap.entries())));
                     localStorage.setItem('wordFinderTheme', themes[currentTheme]);
-                    localStorage.setItem('wordFinderBombList', JSON.stringify(Array.from(wordBombList)));
+                    // wordBombList is now file-based, do NOT save/load from local storage
                     localStorage.setItem('wordFinderIncludeList', JSON.stringify(permanentIncludeList));
                     localStorage.setItem('wordFinderExcludeList', JSON.stringify(permanentExcludeList));
                 } catch (e) { console.error("Failed to save state:", e); }
@@ -1106,7 +1103,8 @@
             function loadState() {
                 const savedGames = localStorage.getItem('wordFinderGameSessions');
                 if (savedGames) {
-                    try { gameSessions = JSON.parse(savedGames); } catch (e) { gameSessions = []; }
+                    try { gameSessions = JSON.parse(savedGames);
+                    } catch (e) { gameSessions = []; }
                 }
                 const savedCounts = localStorage.getItem('wordFinderCopyCounts');
                 if (savedCounts) {
@@ -1114,32 +1112,31 @@
                         wordCopyCountMap = new Map(JSON.parse(savedCounts));
                         allCopiedWords = new Set(wordCopyCountMap.keys());
                     } catch (e) { 
-                        wordCopyCountMap = new Map(); 
+                        wordCopyCountMap = new Map();
                         allCopiedWords = new Set();
                     }
                 }
                 
                 migrateOldData();
-                
                 const savedTheme = localStorage.getItem('wordFinderTheme');
                 if (savedTheme && themes.includes(savedTheme)) {
                     currentTheme = themes.indexOf(savedTheme) - 1;
                 } else {
-                    currentTheme = -1; 
+                    currentTheme = -1;
                 }
                 toggleTheme();
                 
-                const savedBombList = localStorage.getItem('wordFinderBombList');
-                if (savedBombList) {
-                    try { wordBombList = new Set(JSON.parse(savedBombList)); } catch (e) { wordBombList = new Set(); }
-                }
+                // Note: removed loading of wordFinderBombList from LocalStorage as per request
+                
                 const savedIncludeList = localStorage.getItem('wordFinderIncludeList');
                 if (savedIncludeList) {
-                    try { permanentIncludeList = JSON.parse(savedIncludeList); } catch (e) { permanentIncludeList = []; }
+                    try { permanentIncludeList = JSON.parse(savedIncludeList);
+                    } catch (e) { permanentIncludeList = []; }
                 }
                 const savedExcludeList = localStorage.getItem('wordFinderExcludeList');
                 if (savedExcludeList) {
-                    try { permanentExcludeList = JSON.parse(savedExcludeList); } catch (e) { permanentExcludeList = []; }
+                    try { permanentExcludeList = JSON.parse(savedExcludeList);
+                    } catch (e) { permanentExcludeList = []; }
                 }
                 updateHistoryPanel();
                 renderIncludeExcludeTags();
@@ -1165,14 +1162,13 @@
                      let word = null;
                     if(typeof item === 'string') word = item;
                     else if (typeof item === 'object' && item.word) word = item.word;
-                     
+                    
                     if (word && !allCopiedWords.has(word)) {
                         allCopiedWords.add(word);
                         wordCopyCountMap.set(word, 1);
                         migratedCount++;
                     }
                 });
-                
                 if (migratedCount > 0) {
                     console.log(`Migrated ${migratedCount} words from old history to new stats system.`);
                     saveState();
@@ -1211,7 +1207,6 @@
                         summary.appendChild(sessionName); summary.appendChild(sessionControls);
                         const wordList = document.createElement('ul');
                         wordList.className = 'session-word-list';
-                        
                         session.words.forEach(item => {
                             if (!searchTerm || item.word.includes(searchTerm)) {
                                 const li = document.createElement('li');
@@ -1231,7 +1226,6 @@
                         historyContent.appendChild(sessionElement);
                     }
                 });
-                
                 if (gameSessions.length > 0 && copiedWordsHistory.length > 0) {
                     historyContent.appendChild(document.createElement('hr')).className = 'history-divider';
                 }
@@ -1249,7 +1243,6 @@
                         historyContent.appendChild(itemElement);
                     }
                 });
-                
                 updateHistoryCounter();
                 historyHeader.textContent = `History`;
             }
@@ -1257,7 +1250,6 @@
         async function loadAndProcessFile() {
             try {
                 loadingMessage.style.display = 'block';
-        
                 // 1. Helper to load standard simple lists
                 const loadList = async (filename, targetSet) => {
                     try {
@@ -1272,9 +1264,10 @@
                             });
                             console.log(`Loaded ${filename}: ${targetSet.size} items.`);
                         }
-                    } catch (e) { console.warn(`Skipped ${filename}: ${e.message}`); }
+                    } catch (e) { console.warn(`Skipped ${filename}: ${e.message}`);
+                    }
                 };
-        
+                
                 // 2. Load Initial Dictionary (Master Set)
                 await loadList('initial_dictionary.txt', masterWordSet);
                 allCleanWords = Array.from(masterWordSet);
@@ -1310,6 +1303,9 @@
                 await loadList('diseases_list.txt', diseasesSet);
                 await loadList('religions_list.txt', religionsSet);
                 await loadList('palindromes_list.txt', palindromesSet);
+                
+                // --- Load WB List from file ---
+                await loadList('wb_list.txt', wordBombList);
         
                 // 5. Load Phobias (Special Parsing for Tooltips)
                 try {
@@ -1327,14 +1323,14 @@
                         });
                         console.log(`Loaded phobias: ${phobiasMap.size}`);
                     }
-                } catch (e) { console.warn("Failed loading phobias"); }
+                } catch (e) { console.warn("Failed loading phobias");
+                }
         
                 // 6. Load Cities (Iterate through loaded Countries to find files)
                 // Note: This assumes the filenames in .devcontainer match the names in countries_list.txt
                 if (countriesSet.size > 0) {
                     let loadedCityFiles = 0;
                     const countryArray = Array.from(countriesSet);
-                    
                     // We use Promise.all to fetch them in parallel for speed
                     await Promise.all(countryArray.map(async (country) => {
                         // Ensure filename safe (remove spaces if your files are "unitedstates.txt" or keep them if "united states.txt")
@@ -1368,155 +1364,156 @@
             }
         }
 
-        function findWords(query, uniqueFilterType, sortFilterType, lenFilter, wordsToExclude = []) {
-                        const excludeSet = new Set(wordsToExclude);
-                        let candidateWords = [];
-                        let patternRegex = null;
-                        let queryCharMap = null;
-                        let queryLetterSet = null;
-                        
-                        // --- 1. Select the Source List (The Fix) ---
-                        let sourceList;
-                        
-                        switch (uniqueFilterType) {
-                            case 'word-bomb': sourceList = Array.from(wordBombList); break;
-                            case 'names': sourceList = Array.from(nameList); break;
-                            case 'brands': sourceList = Array.from(brandsSet); break;
-                            case 'countries': sourceList = Array.from(countriesSet); break;
-                            case 'bad': sourceList = Array.from(badSet); break;
-                            case 'science': sourceList = Array.from(scienceSet); break;
-                            case 'jobs': sourceList = Array.from(jobsSet); break;
-                            case 'languages': sourceList = Array.from(languagesSet); break;
-                            case 'phobias': sourceList = Array.from(phobiasMap.keys()); break;
-                            case 'animals': sourceList = Array.from(animalsSet); break;
-                            case 'sports': sourceList = Array.from(sportsSet); break;
-                            case 'colors': sourceList = Array.from(colorsSet); break;
-                            case 'board-games': sourceList = Array.from(boardGamesSet); break;
-                            case 'video-games': sourceList = Array.from(videoGamesSet); break;
-                            case 'foods': sourceList = Array.from(foodsSet); break;
-                            case 'cities': sourceList = Array.from(citiesSet); break;
-                            case 'diseases': sourceList = Array.from(diseasesSet); break;
-                            case 'religions': sourceList = Array.from(religionsSet); break;
-                            case 'palindromes': sourceList = Array.from(palindromesSet); break;
-                            
-                            // Default to Master Dictionary for Standard, Patterns, etc.
-                            default: sourceList = allCleanWords; break;
-                        }
-                        
-                        // --- 2. Setup Pattern Matching Logic ---
-                        if (uniqueFilterType === 'pattern') {
-                            try { patternRegex = new RegExp(query.replace(/_/g, '.'), 'i');
-                            } catch (e) { return []; }
-                        }
-                        if (uniqueFilterType === 'v-c-pattern') {
-                            try {
-                                const pattern = query.replace(/v/gi, '[aeiouy]').replace(/c/gi, '[bcdfghjklmnpqrstvwxyz]');
-                                patternRegex = new RegExp(`^${pattern}$`);
-                            } catch (e) { return []; }
-                        }
-                        if (uniqueFilterType === 'anagram') {
-                            queryCharMap = getCharMap(query);
-                        }
-                        if (uniqueFilterType === 'include-all') {
-                            queryLetterSet = new Set(query.split(''));
-                        }
-        
-                        // --- 3. Filter the List ---
-                        for (const word of sourceList) {
-                            // Check Excludes
-                            if (excludeSet.has(word)) continue;
-                            
-                            // Global Include/Exclude lists (skip for specific fixed lists like countries to keep them pure)
-                            const specializedLists = ['countries', 'names', 'brands', 'bad', 'science', 'jobs', 'languages', 'phobias', 'animals', 'sports', 'colors', 'board-games', 'video-games', 'foods', 'cities', 'diseases', 'religions', 'palindromes'];
-                            
-                            if (!specializedLists.includes(uniqueFilterType)) {
-                                if (permanentExcludeList.length > 0 && permanentExcludeList.some(ex => word.includes(ex))) continue;
-                                if (permanentIncludeList.length > 0 && !permanentIncludeList.every(inc => word.includes(inc))) continue;
-                            }
-                            
-                            let matchesBase = false;
-                            
-                            switch (uniqueFilterType) {
-                                case 'pattern':
-                                case 'v-c-pattern':
-                                    matchesBase = patternRegex.test(word);
-                                    break;
-                                case 'anagram':
-                                    const wordCharMap = getCharMap(word);
-                                    matchesBase = true;
-                                    for (const char in wordCharMap) {
-                                        if (!queryCharMap[char] || wordCharMap[char] > queryCharMap[char]) {
-                                            matchesBase = false;
-                                            break;
-                                        }
-                                    }
-                                    break;
-                                case 'include-all':
-                                    if (queryLetterSet) {
-                                        matchesBase = [...queryLetterSet].every(letter => word.includes(letter));
-                                    }
-                                    break;
-                                default: 
-                                    // Standard Search (Starting/Ending/Contains)
-                                    if(sortFilterType === 'starting') {
-                                        matchesBase = word.startsWith(query);
-                                    } else if (sortFilterType === 'ending') {
-                                        matchesBase = word.endsWith(query);
-                                    } else {
-                                        matchesBase = (query.length === 0) ? true : word.includes(query);
-                                    }
-                                    break;
-                            }
-        
-                            if (matchesBase) {
-                                candidateWords.push(word);
-                            }
-                        }
-        
-                        if (candidateWords.length === 0) return [];
-        
-                        // --- 4. Apply Length Filter ---
-                        if (lenFilter !== 'any' && lenFilter !== 'longest' && lenFilter !== 'shortest') {
-                            const length = parseInt(lenFilter, 10);
-                            candidateWords = candidateWords.filter(w => w.length === length);
-                        }
-                        
-                        if (candidateWords.length === 0) return [];
-        
-                        // --- 5. Apply Frequency Sorting (Common/Least Common) ---
-                        if (uniqueFilterType !== 'countries' && uniqueFilterType !== 'cities') { // Skip frequency for geo lists usually
-                            switch (sortFilterType) {
-                                case 'common': {
-                                    const candidatesWithFreq = candidateWords.filter(w => wordFrequencyMap.has(w));
-                                    if (candidatesWithFreq.length === 0) return []; // Or return candidateWords if you prefer fallback
-                                    candidatesWithFreq.sort((a, b) => (wordFrequencyMap.get(b) || 0) - (wordFrequencyMap.get(a) || 0));
-                                    // Only keep the very top tier frequency? Or just sort? 
-                                    // Original logic kept only the top tier:
-                                    const mostCommonFreq = wordFrequencyMap.get(candidatesWithFreq[0]);
-                                    candidateWords = candidatesWithFreq.filter(w => wordFrequencyMap.get(w) === mostCommonFreq);
-                                    break;
-                                }
-                                case 'least-common': {
-                                    const candidatesWithFreq = candidateWords.filter(w => wordFrequencyMap.has(w));
-                                    if (candidatesWithFreq.length === 0) return [];
-                                    candidatesWithFreq.sort((a, b) => (wordFrequencyMap.get(a) || 0) - (wordFrequencyMap.get(b) || 0));
-                                    const leastCommonFreq = wordFrequencyMap.get(candidatesWithFreq[0]);
-                                    candidateWords = candidatesWithFreq.filter(w => wordFrequencyMap.get(w) === leastCommonFreq);
-                                    break;
-                                }
-                            }
-                        }
-                        
-                        // --- 6. Apply Length Sorting ---
-                        if (lenFilter === 'longest') {
-                            return candidateWords.sort((a, b) => b.length - a.length);
-                        }
-                        if (lenFilter === 'shortest') {
-                            return candidateWords.sort((a, b) => a.length - b.length);
-                        }
-                        
-                        return candidateWords;
+            // --- findWords (Updated) ---
+            function findWords(query, uniqueFilterType, sortFilterType, lenFilter, wordsToExclude = []) {
+                const excludeSet = new Set(wordsToExclude);
+                let candidateWords = [];
+                let patternRegex = null;
+                let queryCharMap = null;
+                let queryLetterSet = null;
+                
+                // --- 1. Select the Source List (The Fix) ---
+                let sourceList;
+                
+                switch (uniqueFilterType) {
+                    case 'word-bomb': sourceList = Array.from(wordBombList); break;
+                    case 'names': sourceList = Array.from(nameList); break;
+                    case 'brands': sourceList = Array.from(brandsSet); break;
+                    case 'countries': sourceList = Array.from(countriesSet); break;
+                    case 'bad': sourceList = Array.from(badSet); break;
+                    case 'science': sourceList = Array.from(scienceSet); break;
+                    case 'jobs': sourceList = Array.from(jobsSet); break;
+                    case 'languages': sourceList = Array.from(languagesSet); break;
+                    case 'phobias': sourceList = Array.from(phobiasMap.keys()); break;
+                    case 'animals': sourceList = Array.from(animalsSet); break;
+                    case 'sports': sourceList = Array.from(sportsSet); break;
+                    case 'colors': sourceList = Array.from(colorsSet); break;
+                    case 'board-games': sourceList = Array.from(boardGamesSet); break;
+                    case 'video-games': sourceList = Array.from(videoGamesSet); break;
+                    case 'foods': sourceList = Array.from(foodsSet); break;
+                    case 'cities': sourceList = Array.from(citiesSet); break;
+                    case 'diseases': sourceList = Array.from(diseasesSet); break;
+                    case 'religions': sourceList = Array.from(religionsSet); break;
+                    case 'palindromes': sourceList = Array.from(palindromesSet); break;
+                    
+                    // Default to Master Dictionary for Standard, Patterns, etc.
+                    default: sourceList = allCleanWords; break;
+                }
+                
+                // --- 2. Setup Pattern Matching Logic ---
+                if (uniqueFilterType === 'pattern') {
+                    try { patternRegex = new RegExp(query.replace(/_/g, '.'), 'i');
+                    } catch (e) { return []; }
+                }
+                if (uniqueFilterType === 'v-c-pattern') {
+                    try {
+                        const pattern = query.replace(/v/gi, '[aeiouy]').replace(/c/gi, '[bcdfghjklmnpqrstvwxyz]');
+                        patternRegex = new RegExp(`^${pattern}$`);
+                    } catch (e) { return []; }
+                }
+                if (uniqueFilterType === 'anagram') {
+                    queryCharMap = getCharMap(query);
+                }
+                if (uniqueFilterType === 'include-all') {
+                    queryLetterSet = new Set(query.split(''));
+                }
+
+                // --- 3. Filter the List ---
+                for (const word of sourceList) {
+                    // Check Excludes
+                    if (excludeSet.has(word)) continue;
+                    
+                    // Global Include/Exclude lists (skip for specific fixed lists like countries to keep them pure)
+                    const specializedLists = ['countries', 'names', 'brands', 'bad', 'science', 'jobs', 'languages', 'phobias', 'animals', 'sports', 'colors', 'board-games', 'video-games', 'foods', 'cities', 'diseases', 'religions', 'palindromes'];
+                    
+                    if (!specializedLists.includes(uniqueFilterType)) {
+                        if (permanentExcludeList.length > 0 && permanentExcludeList.some(ex => word.includes(ex))) continue;
+                        if (permanentIncludeList.length > 0 && !permanentIncludeList.every(inc => word.includes(inc))) continue;
                     }
+                    
+                    let matchesBase = false;
+                    
+                    switch (uniqueFilterType) {
+                        case 'pattern':
+                        case 'v-c-pattern':
+                            matchesBase = patternRegex.test(word);
+                            break;
+                        case 'anagram':
+                            const wordCharMap = getCharMap(word);
+                            matchesBase = true;
+                            for (const char in wordCharMap) {
+                                if (!queryCharMap[char] || wordCharMap[char] > queryCharMap[char]) {
+                                    matchesBase = false;
+                                    break;
+                                }
+                            }
+                            break;
+                        case 'include-all':
+                            if (queryLetterSet) {
+                                matchesBase = [...queryLetterSet].every(letter => word.includes(letter));
+                            }
+                            break;
+                        default: 
+                            // Standard Search (Starting/Ending/Contains)
+                            if(sortFilterType === 'starting') {
+                                matchesBase = word.startsWith(query);
+                            } else if (sortFilterType === 'ending') {
+                                matchesBase = word.endsWith(query);
+                            } else {
+                                matchesBase = (query.length === 0) ? true : word.includes(query);
+                            }
+                            break;
+                    }
+
+                    if (matchesBase) {
+                        candidateWords.push(word);
+                    }
+                }
+
+                if (candidateWords.length === 0) return [];
+
+                // --- 4. Apply Length Filter ---
+                if (lenFilter !== 'any' && lenFilter !== 'longest' && lenFilter !== 'shortest') {
+                    const length = parseInt(lenFilter, 10);
+                    candidateWords = candidateWords.filter(w => w.length === length);
+                }
+                
+                if (candidateWords.length === 0) return [];
+
+                // --- 5. Apply Frequency Sorting (Common/Least Common) ---
+                if (uniqueFilterType !== 'countries' && uniqueFilterType !== 'cities') { // Skip frequency for geo lists usually
+                    switch (sortFilterType) {
+                        case 'common': {
+                            const candidatesWithFreq = candidateWords.filter(w => wordFrequencyMap.has(w));
+                            if (candidatesWithFreq.length === 0) return []; // Or return candidateWords if you prefer fallback
+                            candidatesWithFreq.sort((a, b) => (wordFrequencyMap.get(b) || 0) - (wordFrequencyMap.get(a) || 0));
+                            // Only keep the very top tier frequency? Or just sort? 
+                            // Original logic kept only the top tier:
+                            const mostCommonFreq = wordFrequencyMap.get(candidatesWithFreq[0]);
+                            candidateWords = candidatesWithFreq.filter(w => wordFrequencyMap.get(w) === mostCommonFreq);
+                            break;
+                        }
+                        case 'least-common': {
+                            const candidatesWithFreq = candidateWords.filter(w => wordFrequencyMap.has(w));
+                            if (candidatesWithFreq.length === 0) return [];
+                            candidatesWithFreq.sort((a, b) => (wordFrequencyMap.get(a) || 0) - (wordFrequencyMap.get(b) || 0));
+                            const leastCommonFreq = wordFrequencyMap.get(candidatesWithFreq[0]);
+                            candidateWords = candidatesWithFreq.filter(w => wordFrequencyMap.get(w) === leastCommonFreq);
+                            break;
+                        }
+                    }
+                }
+                
+                // --- 6. Apply Length Sorting ---
+                if (lenFilter === 'longest') {
+                    return candidateWords.sort((a, b) => b.length - a.length);
+                }
+                if (lenFilter === 'shortest') {
+                    return candidateWords.sort((a, b) => a.length - b.length);
+                }
+                
+                return candidateWords;
+            }
             
             // --- copyToClipboard (Updated) ---
             function copyToClipboard(formattedWord, originalWord, element, query = "") {
@@ -1547,7 +1544,6 @@
                     caps: capMode, 
                     game: isGameMode 
                 };
-                
                 if (isGameMode && currentGameSession) {
                     if (!currentGameSession.words.some(item => item.word === originalWord)) {
                         currentGameSession.words.push(newWordItem);
@@ -1563,50 +1559,29 @@
                 updateHistoryPanel();
             }
 
+            // --- handleSearch (Main routing) (Updated) ---
             function handleSearch(event) {
-                    if (event) event.preventDefault();
-                    
-                    const query = isSoftlocked ? softlockBuffer.trim().toLowerCase() : searchInput.value.trim().toLowerCase();
-            
-                    // --- NEW: Intercept for Word Bomb Add Mode ---
-                    if (isWordBombAddMode) {
-                        if (query.length > 0) {
-                            if (wordBombList.has(query)) {
-                                resultsContainer.innerHTML = `<span style="color: var(--game-mode-color)">"${query}"</span> is already in your Word Bomb list.`;
-                            } else {
-                                wordBombList.add(query);
-                                saveState(); // Save to local storage immediately
-                                resultsContainer.innerHTML = `
-                                    <p>Added <span style="color: var(--check-color); font-weight: bold; font-size: 1.2rem;">"${query}"</span> to Word Bomb List!</p>
-                                    <p>Total Words in List: ${wordBombList.size}</p>
-                                `;
-                            }
-                            searchInput.value = ''; // Clear input for the next word
-                        }
-                        return; // Stop here, do not run normal search
-                    }
-                    // ---------------------------------------------
-            
-                    if (isCrazyMode) {
-                        runCrazySearch(query);
-                        return; 
-                    }
-                    
-                    const uniqueFilterType = uniqueFilter.value;
-                    const sortFilterType = searchFilter.value;
-                    const lenFilter = lengthFilter.value;
-                    const capMode = getEffectiveCapMode();
-                    
-                    if (isGameMode) {
-                        handleGameSearch(query, uniqueFilterType, sortFilterType, lenFilter, capMode);
-                    } else {
-                        handleNormalSearch(query, uniqueFilterType, sortFilterType, lenFilter, capMode);
-                    }
-                    
-                    if(isSoftlocked) {
-                        softlockBuffer = "";
-                    }
+                if (event) event.preventDefault();
+                const query = isSoftlocked ? softlockBuffer.trim().toLowerCase() : searchInput.value.trim().toLowerCase();
+                
+                if (isCrazyMode) {
+                    runCrazySearch(query);
+                    return; // Crazy mode handles its own search
                 }
+                
+                const uniqueFilterType = uniqueFilter.value;
+                const sortFilterType = searchFilter.value;
+                const lenFilter = lengthFilter.value;
+                const capMode = getEffectiveCapMode();
+                if (isGameMode) {
+                    handleGameSearch(query, uniqueFilterType, sortFilterType, lenFilter, capMode);
+                } else {
+                    handleNormalSearch(query, uniqueFilterType, sortFilterType, lenFilter, capMode);
+                }
+                if(isSoftlocked) {
+                    softlockBuffer = "";
+                }
+            }
             
             // --- NEW: Crazy Search Function ---
             function runCrazySearch(query) {
@@ -1627,7 +1602,7 @@
                     for (let i = 3; i <= dictionaryStats.maxLength; i++) {
                         lengthOptions.push(i.toString());
                     }
-                    lengthOptions.push('any'); 
+                    lengthOptions.push('any');
                     lenFilter = lengthOptions[Math.floor(Math.random() * lengthOptions.length)];
                     
                     const crazyFilters = [
@@ -1639,18 +1614,16 @@
                         { unique: 'none', sort: 'starting' },
                         { unique: 'none', sort: 'ending' }
                     ];
-                    
                     const randomFilter = crazyFilters[Math.floor(Math.random() * crazyFilters.length)];
                     uniqueFilterType = randomFilter.unique;
                     sortFilterType = randomFilter.sort;
                     
                     foundWordsList = findWords(query, uniqueFilterType, sortFilterType, lenFilter, wordsToExclude);
                     attempts++;
-
                 } while (foundWordsList.length === 0 && query.length > 0 && attempts < 50);
-
                 if (foundWordsList.length === 0) {
-                    resultsContainer.textContent = `Crazy Mode failed to find a match after 50 attempts! Try a different query.`;
+                    resultsContainer.textContent = `Crazy Mode failed to find a match after 50 attempts!
+                    Try a different query.`;
                     return;
                 }
 
@@ -1663,39 +1636,7 @@
                     handleNormalSearch(query, uniqueFilterType, sortFilterType, lenFilter, capMode, foundWordsList);
                 }
             }
-        // --- WORD BOMB ADD MODE LOGIC ---
-    const wbAddModeButton = document.getElementById('wb-add-mode-button');
-    let isWordBombAddMode = false;
-
-    wbAddModeButton.addEventListener('click', () => {
-        isWordBombAddMode = !isWordBombAddMode;
-        
-        if (isWordBombAddMode) {
-            wbAddModeButton.classList.add('active');
-            wbAddModeButton.textContent = 'Adding to WB... (Type & Enter)';
-            wbAddModeButton.style.backgroundColor = "var(--exclude-color)"; // Red indication
             
-            // Visual feedback
-            searchInput.placeholder = "Type word & Press Enter to ADD";
-            searchInput.focus();
-            resultsContainer.innerHTML = `
-                <h3>Word Bomb Add Mode Active</h3>
-                <p>Type any word in the search box and press <strong>Enter</strong> to add it to your Word Bomb list.</p>
-                <p>Current List Size: ${wordBombList.size}</p>
-            `;
-            
-            // Turn off other modes to avoid confusion
-            if (isCrazyMode) crazyModeButton.click();
-            if (isDefineMode) defineToggleButton.click();
-            
-        } else {
-            wbAddModeButton.classList.remove('active');
-            wbAddModeButton.textContent = 'WB Add Mode 💣';
-            wbAddModeButton.style.backgroundColor = ""; // Reset color
-            searchInput.placeholder = "e.g., s_a_e";
-            resultsContainer.innerHTML = 'Add Mode Deactivated.';
-        }
-    });
             // --- getTooltipText (Unchanged) ---
             function getTooltipText(word) {
                 const freq = wordFrequencyMap.get(word) || 'N/A';
@@ -1707,7 +1648,6 @@
             function handleNormalSearch(query, uniqueFilterType, sortFilterType, lenFilter, capMode, preFoundWordsList = null) {
                 resultsContainer.innerHTML = '';
                 if (query.length === 0 && permanentIncludeList.length === 0 && uniqueFilterType !== 'word-bomb' && uniqueFilterType !== 'anagram' && uniqueFilterType !== 'by-countries' && uniqueFilterType !== 'names') return;
-
                 const foundWordsList = preFoundWordsList || findWords(query, uniqueFilterType, sortFilterType, lenFilter);
                 
                 if (foundWordsList.length === 0) {
@@ -1716,7 +1656,6 @@
                 }
 
                 let displayList = foundWordsList;
-                
                 if (sortFilterType === 'none' && lenFilter === 'any') {
                     shuffleArray(displayList);
                 }
@@ -1749,67 +1688,68 @@
                 resultsContainer.appendChild(fragment);
             }
 
+            // --- handleGameSearch (Updated) ---
             function handleGameSearch(query, uniqueFilterType, sortFilterType, lenFilter, capMode) {
-                            if (query.length < 1 && permanentIncludeList.length < 1) { 
-                                resultsContainer.textContent = 'Game Mode: Please enter letters to search.';
-                                return;
-                            }
-                            if (!currentGameSession) {
-                                resultsContainer.textContent = 'Error: No active game session.';
-                                return;
-                            }
-                            
-                            // Get words already used in this session to exclude them
-                            const usedWordsInThisGame = new Set(currentGameSession.words.map(item => item.word));
-                            
-                            // 1. Find matches based on current filters (Animals, etc.)
-                            let matches = findWords(query, uniqueFilterType, sortFilterType, lenFilter, Array.from(usedWordsInThisGame));
-            
-                            // 2. SAFETY FILTER: Ensure word is Single Word AND exists in Master Dictionary
-                            // This prevents "ice cream" (spaces) or obscure list-only words from appearing in Game Mode.
-                            matches = matches.filter(word => {
-                                const isSingleWord = !word.includes(' ') && !word.includes('-');
-                                const existsInMaster = masterWordSet.has(word);
-                                return isSingleWord && existsInMaster;
-                            });
-            
-                            if (matches.length === 0) {
-                                resultsContainer.textContent = `No valid *new* words found (checked intersection with Master Dictionary).`;
-                                return;
-                            }
-                            
-                            // 3. Apply Sorting/Tie-Breakers
-                            let tieBreakerList = matches;
-                            
-                            if (uniqueFilterType === 'by-countries' || uniqueFilterType === 'names') {
-                                tieBreakerList = matches;
-                            }
-                            else if(sortFilterType === 'longest' || lenFilter === 'longest') {
-                                const best = matches[0].length;
-                                tieBreakerList = matches.filter(w => w.length === best);
-                            } else if (sortFilterType === 'shortest' || lenFilter === 'shortest') {
-                                const best = matches[0].length;
-                                tieBreakerList = matches.filter(w => w.length === best);
-                            } else if (sortFilterType === 'common') {
-                                const best = wordFrequencyMap.get(matches[0]);
-                                tieBreakerList = matches.filter(w => wordFrequencyMap.get(w) === best);
-                            } else if (sortFilterType === 'least-common') {
-                                const best = wordFrequencyMap.get(matches[0]);
-                                tieBreakerList = matches.filter(w => wordFrequencyMap.get(w) === best);
-                            }
-                            
-                            if(tieBreakerList.length === 0) {
-                                 resultsContainer.textContent = `No *new* words found for that combo.`;
-                                 return;
-                            }
-            
-                            // 4. Pick a random word and Copy
-                            const randomWord = tieBreakerList[Math.floor(Math.random() * tieBreakerList.length)];
-                            const formattedWord = applyCapping(randomWord, capMode);
-                            
-                            copyToClipboard(formattedWord, randomWord, null, query);
-                            addToHistory(randomWord, query, uniqueFilterType, sortFilterType, capMode);
-                        }
+                if (query.length < 1 && permanentIncludeList.length < 1) { 
+                    resultsContainer.textContent = 'Game Mode: Please enter letters to search.';
+                    return;
+                }
+                if (!currentGameSession) {
+                    resultsContainer.textContent = 'Error: No active game session.';
+                    return;
+                }
+                
+                // Get words already used in this session to exclude them
+                const usedWordsInThisGame = new Set(currentGameSession.words.map(item => item.word));
+                
+                // 1. Find matches based on current filters (Animals, etc.)
+                let matches = findWords(query, uniqueFilterType, sortFilterType, lenFilter, Array.from(usedWordsInThisGame));
+
+                // 2. SAFETY FILTER: Ensure word is Single Word AND exists in Master Dictionary
+                // This prevents "ice cream" (spaces) or obscure list-only words from appearing in Game Mode.
+                matches = matches.filter(word => {
+                    const isSingleWord = !word.includes(' ') && !word.includes('-');
+                    const existsInMaster = masterWordSet.has(word);
+                    return isSingleWord && existsInMaster;
+                });
+
+                if (matches.length === 0) {
+                    resultsContainer.textContent = `No valid *new* words found (checked intersection with Master Dictionary).`;
+                    return;
+                }
+                
+                // 3. Apply Sorting/Tie-Breakers
+                let tieBreakerList = matches;
+                
+                if (uniqueFilterType === 'by-countries' || uniqueFilterType === 'names') {
+                    tieBreakerList = matches;
+                }
+                else if(sortFilterType === 'longest' || lenFilter === 'longest') {
+                    const best = matches[0].length;
+                    tieBreakerList = matches.filter(w => w.length === best);
+                } else if (sortFilterType === 'shortest' || lenFilter === 'shortest') {
+                    const best = matches[0].length;
+                    tieBreakerList = matches.filter(w => w.length === best);
+                } else if (sortFilterType === 'common') {
+                    const best = wordFrequencyMap.get(matches[0]);
+                    tieBreakerList = matches.filter(w => wordFrequencyMap.get(w) === best);
+                } else if (sortFilterType === 'least-common') {
+                    const best = wordFrequencyMap.get(matches[0]);
+                    tieBreakerList = matches.filter(w => wordFrequencyMap.get(w) === best);
+                }
+                
+                if(tieBreakerList.length === 0) {
+                     resultsContainer.textContent = `No *new* words found for that combo.`;
+                     return;
+                }
+
+                // 4. Pick a random word and Copy
+                const randomWord = tieBreakerList[Math.floor(Math.random() * tieBreakerList.length)];
+                const formattedWord = applyCapping(randomWord, capMode);
+                
+                copyToClipboard(formattedWord, randomWord, null, query);
+                addToHistory(randomWord, query, uniqueFilterType, sortFilterType, capMode);
+            }
             
             // --- NEW: Define Word Function (with Fallback) ---
             async function defineWord(word) {
@@ -1821,7 +1761,6 @@
                 showDefineTab('summary');
                 
                 defineModalOverlay.style.display = 'flex';
-                
                 try {
                     // --- Attempt 1: Primary API ---
                     const data = await fetchDictionaryApi(word);
@@ -1851,23 +1790,21 @@
                     throw new Error('Word not found in dictionaryapi.dev');
                 }
                 const data = await response.json();
-                
                 const entry = data[0];
                 let summaryHtml = '';
                 let fullHtml = '';
                 
                 fullHtml += `<h3>${entry.word} <small style="color: var(--text-muted-color);">${entry.phonetic || ''}</small></h3>`;
-                
                 entry.meanings.forEach(meaning => {
                     fullHtml += `<h4>(${meaning.partOfSpeech})</h4>`;
                     meaning.definitions.forEach((def, index) => {
                         fullHtml += `<p><b>${index + 1}.</b> ${def.definition}</p>`;
+                        
                         if (def.example) {
                             fullHtml += `<p><em>e.g., "${def.example}"</em></p>`;
                         }
                     });
                 });
-                
                 if (entry.meanings[0] && entry.meanings[0].definitions[0]) {
                     summaryHtml = `<h3>${entry.word} <small style="color: var(--text-muted-color);">${entry.phonetic || ''}</small></h3>`;
                     summaryHtml += `<h4>(${entry.meanings[0].partOfSpeech})</h4>`;
@@ -1888,7 +1825,6 @@
                     throw new Error('Word not found in Wiktionary');
                 }
                 const data = await response.json();
-                
                 const entry = data.en[0]; // Get first English entry
                 if (!entry || !entry.definitions || entry.definitions.length === 0) {
                      throw new Error('Wiktionary entry has no definitions');
@@ -1898,18 +1834,15 @@
                 let fullHtml = '';
                 
                 fullHtml += `<h3>${entry.word} <small style="color: var(--text-muted-color);">(from Wiktionary)</small></h3>`;
-                
                 data.en.forEach(meaningSection => {
                     fullHtml += `<h4>(${meaningSection.partOfSpeech})</h4>`;
                     meaningSection.definitions.forEach((def, index) => {
                         fullHtml += `<p><b>${index + 1}.</b> ${def.definition}</p>`; 
                     });
                 });
-                
                 summaryHtml = `<h3>${entry.word} <small style="color: var(--text-muted-color);">(from Wiktionary)</small></h3>`;
                 summaryHtml += `<h4>(${entry.partOfSpeech})</h4>`;
                 summaryHtml += `<p><b>1.</b> ${entry.definitions[0].definition}</p>`;
-
                 return { title: `Definition for "${entry.word}"`, summaryHtml, fullHtml };
             }
             
@@ -1929,7 +1862,7 @@
             
             // --- speakWord (Unchanged) ---
             function speakWord(word) {
-                synth.cancel(); 
+                synth.cancel();
                 const utterance = new SpeechSynthesisUtterance(word);
                 synth.speak(utterance);
             }
@@ -1946,7 +1879,6 @@
                     totalLength += len;
                     lengthMap.set(len, (lengthMap.get(len) || 0) + 1);
                     if (len > maxLength) maxLength = len;
-                    
                     if (word.length >= 3) {
                         for (let i = 0; i <= word.length - 3; i++) {
                             const prompt = word.substring(i, i + 3);
@@ -1965,7 +1897,6 @@
                     }
                     promptsByCountMap.get(count).push(prompt);
                 });
-                
                 dictionaryStats.avgLength = (totalLength / allCleanWords.length).toFixed(1);
                 dictionaryStats.lengthDistribution = lengthMap;
                 dictionaryStats.maxLength = maxLength;
@@ -2087,7 +2018,6 @@
                     saveState();
                 }
             });
-
             // (Game Toggle and Softlock listeners unchanged)
             gameToggleButton.addEventListener('click', () => {
                 isGameMode = !isGameMode;
@@ -2108,7 +2038,7 @@
                     softlockButton.style.display = 'none';
                     resultsContainer.innerHTML = 'Game Mode Ended.';
                     searchInput.placeholder = "e.g., s_a_e";
-                    currentGameSession = null; 
+                    currentGameSession = null;
                     if (isSoftlocked) {
                         toggleSoftlock();
                     }
@@ -2148,7 +2078,6 @@
                     resultsContainer.innerHTML = `Softlock On. Prompt: <strong class="highlight">${softlockBuffer}</strong> (Press Shift to search)`;
                 }
             });
-
             resetButton.addEventListener('click', () => {
                 document.querySelectorAll('.word-item.copied').forEach(el => {
                     el.classList.remove('copied');
@@ -2158,7 +2087,6 @@
                 });
                 wordBombSelected.clear();
             });
-            
             toggleHistoryButton.addEventListener('click', () => historyPanel.classList.toggle('open'));
             closeHistoryButton.addEventListener('click', () => historyPanel.classList.remove('open'));
             
@@ -2174,7 +2102,6 @@
                     statsModalOverlay.style.display = 'none';
                 }
             });
-            
             // --- NEW: Define Modal Listeners ---
             defineToggleButton.addEventListener('click', () => {
                 isDefineMode = !isDefineMode;
@@ -2227,11 +2154,9 @@
                     crazyModeButton.textContent = 'Crazy Mode 🤪';
                 }
             });
-            
             historySearchInput.addEventListener('input', () => {
                 updateHistoryPanel();
             });
-            
             // --- NEW: Prompt Page Listeners ---
             promptPageButton.addEventListener('click', showPromptsPage);
             promptHomeButton.addEventListener('click', showMainApp);
@@ -2243,7 +2168,6 @@
                     renderPromptWords(promptItem.dataset.prompt);
                 }
             });
-            
             // --- NEW: SubSearch Page Listeners ---
             subsearchPageButton.addEventListener('click', showSubSearchPage);
             subsearchHomeButton.addEventListener('click', showMainApp);
@@ -2256,16 +2180,72 @@
                 }
             });
             
+            // --- TRANSLATOR LOGIC ---
+            const translatorPageButton = document.getElementById('translator-page-button');
+            const translatorPageDiv = document.getElementById('translator-page');
+            const translatorHomeButton = document.getElementById('translator-home-button');
+            const transActionBtn = document.getElementById('trans-action-btn');
+            const transInput = document.getElementById('trans-input');
+            const transOutput = document.getElementById('trans-output');
+            const transSourceLang = document.getElementById('trans-source-lang');
+            const transTargetLang = document.getElementById('trans-target-lang');
+
+            translatorPageButton.addEventListener('click', () => {
+                mainAppDiv.style.display = 'none';
+                promptsPageDiv.style.display = 'none';
+                subsearchPageDiv.style.display = 'none';
+                translatorPageDiv.style.display = 'block';
+            });
+
+            translatorHomeButton.addEventListener('click', showMainApp);
+
+            transActionBtn.addEventListener('click', async () => {
+                const text = transInput.value.trim();
+                if (!text) {
+                    transOutput.innerHTML = '<span style="color: var(--exclude-color)">Please enter text to translate.</span>';
+                    return;
+                }
+                
+                transOutput.innerHTML = '<em>Translating...</em>';
+                
+                const source = transSourceLang.value;
+                const target = transTargetLang.value;
+                // MyMemory format: "source|target" (e.g., "en|it" or "Autodetect|it")
+                const langPair = `${source}|${target}`;
+                
+                try {
+                    const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${langPair}`;
+                    const res = await fetch(url);
+                    const data = await res.json();
+                    
+                    if (data.responseStatus === 200 || data.responseStatus === '200') {
+                        transOutput.innerText = data.responseData.translatedText;
+                        
+                        // Show detected language if we used Autodetect
+                        if (source === 'Autodetect' && data.matches && data.matches.length > 0) {
+                             // Sometimes the API returns the detected match info
+                             console.log("Detected match:", data.matches[0]);
+                        }
+                    } else {
+                        transOutput.innerText = "Error: " + data.responseDetails;
+                    }
+                } catch (e) {
+                    transOutput.innerText = "Connection Error: " + e.message;
+                }
+            });
+
             function showMainApp() {
                 mainAppDiv.style.display = 'flex';
                 promptsPageDiv.style.display = 'none';
                 subsearchPageDiv.style.display = 'none';
+                translatorPageDiv.style.display = 'none';
                 resultsContainer.innerHTML = '';
             }
             
             function showPromptsPage() {
                 mainAppDiv.style.display = 'none';
                 subsearchPageDiv.style.display = 'none';
+                translatorPageDiv.style.display = 'none';
                 promptsPageDiv.style.display = 'block';
                 renderPromptsList();
             }
@@ -2273,6 +2253,7 @@
             function showSubSearchPage() {
                 mainAppDiv.style.display = 'none';
                 promptsPageDiv.style.display = 'none';
+                translatorPageDiv.style.display = 'none';
                 subsearchPageDiv.style.display = 'block';
                 subsearchList.innerHTML = '';
             }
@@ -2294,7 +2275,6 @@
                     item.dataset.prompt = prompt;
                     
                     const hasCopied = Array.from(wordSet).some(word => allCopiedWords.has(word));
-                    
                     item.innerHTML = `
                         <div>
                             <span class="prompt-name">${prompt}</span>
@@ -2334,7 +2314,6 @@
                     
                     const wordSet = threeLetterPromptMap.get(prompt);
                     const hasCopied = Array.from(wordSet).some(word => allCopiedWords.has(word));
-                    
                     item.innerHTML = `
                         <div>
                             <span class="prompt-name">${prompt}</span>
@@ -2396,11 +2375,9 @@
                     const ttsIcon = `<span class="tts-icon">🔊</span>`;
                     const hasCopied = allCopiedWords.has(originalWord);
                     const checkIcon = `<span class="tts-icon" style="color: ${hasCopied ? 'var(--check-color)' : 'var(--reset-color)'};">${hasCopied ? '✓' : '✗'}</span>`;
-
                     wordElement.innerHTML = highlightedHtml + ttsIcon + checkIcon;
                     wordElement.className = 'word-item';
                     wordElement.dataset.originalWord = originalWord;
-                    
                     if (hasCopied) {
                         wordElement.classList.add('copied');
                     }
@@ -2414,12 +2391,12 @@
                 if (target) {
                     const originalWord = target.dataset.originalWord;
                     let tooltipText = '';
-            
+                    
                     // Check active filter for special tooltips
                     const currentFilter = uniqueFilter.value;
             
                     if (currentFilter === 'phobias' && phobiasMap.has(originalWord)) {
-                        // Phobia Tooltip
+                         // Phobia Tooltip
                         tooltipText = `Definition: ${phobiasMap.get(originalWord)}`;
                     } else if (currentFilter === 'cities' && citiesMap.has(originalWord)) {
                         // City Tooltip
@@ -2434,7 +2411,7 @@
                         tooltip.textContent = tooltipText;
                         tooltip.style.left = `${rect.left + (rect.width / 2)}px`;
                         // Add a small offset so it doesn't block the cursor immediately
-                        tooltip.style.top = `${rect.top + window.scrollY - 30}px`; 
+                        tooltip.style.top = `${rect.top + window.scrollY - 30}px`;
                         tooltip.style.display = 'block';
                     }
                 }
@@ -2444,7 +2421,6 @@
                     tooltip.style.display = 'none';
                 }
             });
-            
             resultsContainer.addEventListener('click', (e) => {
                 const target = e.target;
                 const query = isSoftlocked ? softlockBuffer.trim().toLowerCase() : searchInput.value.trim().toLowerCase();
@@ -2463,7 +2439,6 @@
                 if (wordElement) {
                     const originalWord = wordElement.dataset.originalWord;
                     const formattedWord = wordElement.textContent.replace(/🔊|📖|✓|✗/g,'').trim();
-                    
                     if (isDefineMode) {
                         defineWord(originalWord);
                         isDefineMode = false;
@@ -2485,7 +2460,6 @@
                     }
                 }
             });
-            
             resultsContainer.addEventListener('dblclick', (e) => {
                 const wordElement = e.target.closest('.word-item');
                 if (wordElement) {
@@ -2493,20 +2467,12 @@
                     defineWord(originalWord);
                 }
             });
-            
             resultsContainer.addEventListener('contextmenu', (e) => {
                 e.preventDefault(); 
                 const wordElement = e.target.closest('.word-item');
                 if (wordElement) {
-                    const originalWord = wordElement.dataset.originalWord;
-                    if (wordBombList.has(originalWord)) {
-                        wordBombList.delete(originalWord);
-                        tooltip.textContent = `Removed "${originalWord}" from Word-Bomb!`;
-                    } else {
-                        wordBombList.add(originalWord);
-                        tooltip.textContent = `Added "${originalWord}" to Word-Bomb!`;
-                    }
-                    saveState();
+                    // Do nothing for now when right-clicking standard words 
+                    // (Word Bomb logic moved to static file)
                     wordElement.style.transition = 'transform 0.1s ease-out';
                     wordElement.style.transform = 'scale(1.1)';
                     setTimeout(() => {
@@ -2514,7 +2480,6 @@
                     }, 100);
                 }
             });
-
             // --- History Panel click listener (Unchanged) ---
             historyContent.addEventListener('click', (e) => {
                 const target = e.target;
