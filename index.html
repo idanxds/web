@@ -1364,17 +1364,18 @@
             }
         }
 
-            // --- findWords (Updated) ---
+// --- findWords (Updated with Fallback Logic) ---
             function findWords(query, uniqueFilterType, sortFilterType, lenFilter, wordsToExclude = []) {
                 const excludeSet = new Set(wordsToExclude);
-                let candidateWords = [];
+                let primaryCandidates = [];  // Matches everything (Query + Includes/Excludes)
+                let fallbackCandidates = []; // Matches Query ONLY (Ignores Includes/Excludes)
+                
                 let patternRegex = null;
                 let queryCharMap = null;
                 let queryLetterSet = null;
                 
-                // --- 1. Select the Source List (The Fix) ---
+                // --- 1. Select the Source List ---
                 let sourceList;
-                
                 switch (uniqueFilterType) {
                     case 'word-bomb': sourceList = Array.from(wordBombList); break;
                     case 'names': sourceList = Array.from(nameList); break;
@@ -1395,8 +1396,6 @@
                     case 'diseases': sourceList = Array.from(diseasesSet); break;
                     case 'religions': sourceList = Array.from(religionsSet); break;
                     case 'palindromes': sourceList = Array.from(palindromesSet); break;
-                    
-                    // Default to Master Dictionary for Standard, Patterns, etc.
                     default: sourceList = allCleanWords; break;
                 }
                 
@@ -1418,21 +1417,16 @@
                     queryLetterSet = new Set(query.split(''));
                 }
 
-                // --- 3. Filter the List ---
+                // --- 3. Filter the List (Dual Lists) ---
+                const specializedLists = ['countries', 'names', 'brands', 'bad', 'science', 'jobs', 'languages', 'phobias', 'animals', 'sports', 'colors', 'board-games', 'video-games', 'foods', 'cities', 'diseases', 'religions', 'palindromes'];
+                const usePermanentFilters = !specializedLists.includes(uniqueFilterType);
+
                 for (const word of sourceList) {
-                    // Check Excludes
+                    // Always respect Game Mode Excludes
                     if (excludeSet.has(word)) continue;
                     
-                    // Global Include/Exclude lists (skip for specific fixed lists like countries to keep them pure)
-                    const specializedLists = ['countries', 'names', 'brands', 'bad', 'science', 'jobs', 'languages', 'phobias', 'animals', 'sports', 'colors', 'board-games', 'video-games', 'foods', 'cities', 'diseases', 'religions', 'palindromes'];
-                    
-                    if (!specializedLists.includes(uniqueFilterType)) {
-                        if (permanentExcludeList.length > 0 && permanentExcludeList.some(ex => word.includes(ex))) continue;
-                        if (permanentIncludeList.length > 0 && !permanentIncludeList.every(inc => word.includes(inc))) continue;
-                    }
-                    
+                    // Check Base Query Match FIRST
                     let matchesBase = false;
-                    
                     switch (uniqueFilterType) {
                         case 'pattern':
                         case 'v-c-pattern':
@@ -1454,7 +1448,6 @@
                             }
                             break;
                         default: 
-                            // Standard Search (Starting/Ending/Contains)
                             if(sortFilterType === 'starting') {
                                 matchesBase = word.startsWith(query);
                             } else if (sortFilterType === 'ending') {
@@ -1466,53 +1459,75 @@
                     }
 
                     if (matchesBase) {
-                        candidateWords.push(word);
-                    }
-                }
-
-                if (candidateWords.length === 0) return [];
-
-                // --- 4. Apply Length Filter ---
-                if (lenFilter !== 'any' && lenFilter !== 'longest' && lenFilter !== 'shortest') {
-                    const length = parseInt(lenFilter, 10);
-                    candidateWords = candidateWords.filter(w => w.length === length);
-                }
-                
-                if (candidateWords.length === 0) return [];
-
-                // --- 5. Apply Frequency Sorting (Common/Least Common) ---
-                if (uniqueFilterType !== 'countries' && uniqueFilterType !== 'cities') { // Skip frequency for geo lists usually
-                    switch (sortFilterType) {
-                        case 'common': {
-                            const candidatesWithFreq = candidateWords.filter(w => wordFrequencyMap.has(w));
-                            if (candidatesWithFreq.length === 0) return []; // Or return candidateWords if you prefer fallback
-                            candidatesWithFreq.sort((a, b) => (wordFrequencyMap.get(b) || 0) - (wordFrequencyMap.get(a) || 0));
-                            // Only keep the very top tier frequency? Or just sort? 
-                            // Original logic kept only the top tier:
-                            const mostCommonFreq = wordFrequencyMap.get(candidatesWithFreq[0]);
-                            candidateWords = candidatesWithFreq.filter(w => wordFrequencyMap.get(w) === mostCommonFreq);
-                            break;
+                        // Separation Logic: Does it pass the Include/Exclude lists?
+                        let passesPermanent = true;
+                        
+                        if (usePermanentFilters) {
+                            if (permanentExcludeList.length > 0 && permanentExcludeList.some(ex => word.includes(ex))) passesPermanent = false;
+                            if (passesPermanent && permanentIncludeList.length > 0 && !permanentIncludeList.every(inc => word.includes(inc))) passesPermanent = false;
                         }
-                        case 'least-common': {
-                            const candidatesWithFreq = candidateWords.filter(w => wordFrequencyMap.has(w));
-                            if (candidatesWithFreq.length === 0) return [];
-                            candidatesWithFreq.sort((a, b) => (wordFrequencyMap.get(a) || 0) - (wordFrequencyMap.get(b) || 0));
-                            const leastCommonFreq = wordFrequencyMap.get(candidatesWithFreq[0]);
-                            candidateWords = candidatesWithFreq.filter(w => wordFrequencyMap.get(w) === leastCommonFreq);
-                            break;
+
+                        if (passesPermanent) {
+                            primaryCandidates.push(word);
+                        } else {
+                            fallbackCandidates.push(word);
                         }
                     }
                 }
-                
-                // --- 6. Apply Length Sorting ---
-                if (lenFilter === 'longest') {
-                    return candidateWords.sort((a, b) => b.length - a.length);
+
+                // --- Helper: Process (Sort/Length) ---
+                const processCandidates = (list) => {
+                    if (list.length === 0) return [];
+                    let result = list;
+                    
+                    // Length Filter
+                    if (lenFilter !== 'any' && lenFilter !== 'longest' && lenFilter !== 'shortest') {
+                        const length = parseInt(lenFilter, 10);
+                        result = result.filter(w => w.length === length);
+                    }
+                    if (result.length === 0) return [];
+
+                    // Frequency Sorting
+                    if (uniqueFilterType !== 'countries' && uniqueFilterType !== 'cities') {
+                        switch (sortFilterType) {
+                            case 'common': {
+                                const candidatesWithFreq = result.filter(w => wordFrequencyMap.has(w));
+                                if (candidatesWithFreq.length === 0) break; 
+                                candidatesWithFreq.sort((a, b) => (wordFrequencyMap.get(b) || 0) - (wordFrequencyMap.get(a) || 0));
+                                const mostCommonFreq = wordFrequencyMap.get(candidatesWithFreq[0]);
+                                result = candidatesWithFreq.filter(w => wordFrequencyMap.get(w) === mostCommonFreq);
+                                break;
+                            }
+                            case 'least-common': {
+                                const candidatesWithFreq = result.filter(w => wordFrequencyMap.has(w));
+                                if (candidatesWithFreq.length === 0) break;
+                                candidatesWithFreq.sort((a, b) => (wordFrequencyMap.get(a) || 0) - (wordFrequencyMap.get(b) || 0));
+                                const leastCommonFreq = wordFrequencyMap.get(candidatesWithFreq[0]);
+                                result = candidatesWithFreq.filter(w => wordFrequencyMap.get(w) === leastCommonFreq);
+                                break;
+                            }
+                        }
+                    }
+                    
+                    // Length Sorting
+                    if (lenFilter === 'longest') {
+                        return result.sort((a, b) => b.length - a.length);
+                    }
+                    if (lenFilter === 'shortest') {
+                        return result.sort((a, b) => a.length - b.length);
+                    }
+                    return result;
+                };
+
+                // 4. Try Primary List First
+                let finalResults = processCandidates(primaryCandidates);
+
+                // 5. Fallback: If Primary is empty, use the Fallback list
+                if (finalResults.length === 0 && fallbackCandidates.length > 0) {
+                     finalResults = processCandidates(fallbackCandidates);
                 }
-                if (lenFilter === 'shortest') {
-                    return candidateWords.sort((a, b) => a.length - b.length);
-                }
                 
-                return candidateWords;
+                return finalResults;
             }
             
             // --- copyToClipboard (Updated) ---
