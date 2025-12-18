@@ -785,7 +785,7 @@
                     </select>
                 </div>
                 
-                <div class="filter-group">
+                               <div class="filter-group">
                     <label for="search-filter">Sort By:</label>
                     <select id="search-filter">
                         <option value="none" selected>None (Shuffle)</option>
@@ -793,6 +793,7 @@
                         <option value="ending">Ending With</option>
                         <option value="common">Most Common</option>
                         <option value="least-common">Least Common</option>
+                        <option value="maximized">Maximized (wb_list_max.txt)</option>
                     </select>
                 </div>
             
@@ -941,6 +942,7 @@
             // --- State Variables ---
             let masterWordSet = new Set();
             let allCleanWords = [];
+            let wbListMax = []; // <--- ADD THIS LINE
             let nameList = new Set();
             let wordFrequencyMap = new Map();
             let wordCopyCountMap = new Map();
@@ -989,6 +991,7 @@
             let diseasesSet = new Set();
             let religionsSet = new Set();
             let palindromesSet = new Set();
+            
 
             // --- Utility Functions ---
             function shuffleArray(array) {
@@ -1306,7 +1309,11 @@
                 
                 // --- Load WB List from file ---
                 await loadList('wb_list.txt', wordBombList);
-        
+                        const wbMaxSet = new Set();
+        await loadList('wb_list_max.txt', wbMaxSet);
+        wbListMax = Array.from(wbMaxSet); // Convert to Array to preserve order
+        console.log(`Loaded wb_list_max.txt: ${wbListMax.length} items.`);
+                
                 // 5. Load Phobias (Special Parsing for Tooltips)
                 try {
                     const phRes = await fetch('phobias_list.txt');
@@ -1364,11 +1371,11 @@
             }
         }
 
-// --- findWords (Updated with Fallback Logic) ---
+// --- findWords (Updated for Maximized Mode) ---
             function findWords(query, uniqueFilterType, sortFilterType, lenFilter, wordsToExclude = []) {
                 const excludeSet = new Set(wordsToExclude);
-                let primaryCandidates = [];  // Matches everything (Query + Includes/Excludes)
-                let fallbackCandidates = []; // Matches Query ONLY (Ignores Includes/Excludes)
+                let primaryCandidates = [];  
+                let fallbackCandidates = []; 
                 
                 let patternRegex = null;
                 let queryCharMap = null;
@@ -1376,27 +1383,34 @@
                 
                 // --- 1. Select the Source List ---
                 let sourceList;
-                switch (uniqueFilterType) {
-                    case 'word-bomb': sourceList = Array.from(wordBombList); break;
-                    case 'names': sourceList = Array.from(nameList); break;
-                    case 'brands': sourceList = Array.from(brandsSet); break;
-                    case 'countries': sourceList = Array.from(countriesSet); break;
-                    case 'bad': sourceList = Array.from(badSet); break;
-                    case 'science': sourceList = Array.from(scienceSet); break;
-                    case 'jobs': sourceList = Array.from(jobsSet); break;
-                    case 'languages': sourceList = Array.from(languagesSet); break;
-                    case 'phobias': sourceList = Array.from(phobiasMap.keys()); break;
-                    case 'animals': sourceList = Array.from(animalsSet); break;
-                    case 'sports': sourceList = Array.from(sportsSet); break;
-                    case 'colors': sourceList = Array.from(colorsSet); break;
-                    case 'board-games': sourceList = Array.from(boardGamesSet); break;
-                    case 'video-games': sourceList = Array.from(videoGamesSet); break;
-                    case 'foods': sourceList = Array.from(foodsSet); break;
-                    case 'cities': sourceList = Array.from(citiesSet); break;
-                    case 'diseases': sourceList = Array.from(diseasesSet); break;
-                    case 'religions': sourceList = Array.from(religionsSet); break;
-                    case 'palindromes': sourceList = Array.from(palindromesSet); break;
-                    default: sourceList = allCleanWords; break;
+                
+                // NEW: If "Maximized" sort is chosen, force use of wb_list_max
+                if (sortFilterType === 'maximized') {
+                    sourceList = wbListMax;
+                } else {
+                    // Otherwise use the standard Unique Filter selection
+                    switch (uniqueFilterType) {
+                        case 'word-bomb': sourceList = Array.from(wordBombList); break;
+                        case 'names': sourceList = Array.from(nameList); break;
+                        case 'brands': sourceList = Array.from(brandsSet); break;
+                        case 'countries': sourceList = Array.from(countriesSet); break;
+                        case 'bad': sourceList = Array.from(badSet); break;
+                        case 'science': sourceList = Array.from(scienceSet); break;
+                        case 'jobs': sourceList = Array.from(jobsSet); break;
+                        case 'languages': sourceList = Array.from(languagesSet); break;
+                        case 'phobias': sourceList = Array.from(phobiasMap.keys()); break;
+                        case 'animals': sourceList = Array.from(animalsSet); break;
+                        case 'sports': sourceList = Array.from(sportsSet); break;
+                        case 'colors': sourceList = Array.from(colorsSet); break;
+                        case 'board-games': sourceList = Array.from(boardGamesSet); break;
+                        case 'video-games': sourceList = Array.from(videoGamesSet); break;
+                        case 'foods': sourceList = Array.from(foodsSet); break;
+                        case 'cities': sourceList = Array.from(citiesSet); break;
+                        case 'diseases': sourceList = Array.from(diseasesSet); break;
+                        case 'religions': sourceList = Array.from(religionsSet); break;
+                        case 'palindromes': sourceList = Array.from(palindromesSet); break;
+                        default: sourceList = allCleanWords; break;
+                    }
                 }
                 
                 // --- 2. Setup Pattern Matching Logic ---
@@ -1417,15 +1431,18 @@
                     queryLetterSet = new Set(query.split(''));
                 }
 
-                // --- 3. Filter the List (Dual Lists) ---
+                // --- 3. Filter the List ---
                 const specializedLists = ['countries', 'names', 'brands', 'bad', 'science', 'jobs', 'languages', 'phobias', 'animals', 'sports', 'colors', 'board-games', 'video-games', 'foods', 'cities', 'diseases', 'religions', 'palindromes'];
-                const usePermanentFilters = !specializedLists.includes(uniqueFilterType);
+                
+                // If we are using "Maximized", we generally want to respect user filters, 
+                // effectively treating it like a "Standard" search but with a custom list.
+                // So we enable permanent filters unless a specific Unique Filter is active AND we aren't in maximized mode.
+                // Simplified: If 'maximized', use filters. If 'specialized list', don't.
+                const usePermanentFilters = sortFilterType === 'maximized' || !specializedLists.includes(uniqueFilterType);
 
                 for (const word of sourceList) {
-                    // Always respect Game Mode Excludes
                     if (excludeSet.has(word)) continue;
                     
-                    // Check Base Query Match FIRST
                     let matchesBase = false;
                     switch (uniqueFilterType) {
                         case 'pattern':
@@ -1459,9 +1476,7 @@
                     }
 
                     if (matchesBase) {
-                        // Separation Logic: Does it pass the Include/Exclude lists?
                         let passesPermanent = true;
-                        
                         if (usePermanentFilters) {
                             if (permanentExcludeList.length > 0 && permanentExcludeList.some(ex => word.includes(ex))) passesPermanent = false;
                             if (passesPermanent && permanentIncludeList.length > 0 && !permanentIncludeList.every(inc => word.includes(inc))) passesPermanent = false;
@@ -1480,15 +1495,14 @@
                     if (list.length === 0) return [];
                     let result = list;
                     
-                    // Length Filter
                     if (lenFilter !== 'any' && lenFilter !== 'longest' && lenFilter !== 'shortest') {
                         const length = parseInt(lenFilter, 10);
                         result = result.filter(w => w.length === length);
                     }
                     if (result.length === 0) return [];
 
-                    // Frequency Sorting
-                    if (uniqueFilterType !== 'countries' && uniqueFilterType !== 'cities') {
+                    // Frequency Sorting (Ignored if Maximized to preserve order)
+                    if (sortFilterType !== 'maximized' && uniqueFilterType !== 'countries' && uniqueFilterType !== 'cities') {
                         switch (sortFilterType) {
                             case 'common': {
                                 const candidatesWithFreq = result.filter(w => wordFrequencyMap.has(w));
@@ -1509,7 +1523,6 @@
                         }
                     }
                     
-                    // Length Sorting
                     if (lenFilter === 'longest') {
                         return result.sort((a, b) => b.length - a.length);
                     }
@@ -1519,10 +1532,9 @@
                     return result;
                 };
 
-                // 4. Try Primary List First
                 let finalResults = processCandidates(primaryCandidates);
 
-                // 5. Fallback: If Primary is empty, use the Fallback list
+                // Fallback Logic
                 if (finalResults.length === 0 && fallbackCandidates.length > 0) {
                      finalResults = processCandidates(fallbackCandidates);
                 }
