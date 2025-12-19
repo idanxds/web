@@ -1371,7 +1371,7 @@
             }
         }
 
-// --- findWords (Updated for Maximized Mode) ---
+// --- findWords (Updated for Word-Bomb Space-to-Hyphen Logic) ---
             function findWords(query, uniqueFilterType, sortFilterType, lenFilter, wordsToExclude = []) {
                 const excludeSet = new Set(wordsToExclude);
                 let primaryCandidates = [];  
@@ -1380,15 +1380,20 @@
                 let patternRegex = null;
                 let queryCharMap = null;
                 let queryLetterSet = null;
+
+                // --- NEW: Handle Space-to-Hyphen for Word-Bomb ---
+                let activeQuery = query;
+                if (uniqueFilterType === 'word-bomb') {
+                    // Replace all spaces with hyphens for the actual search logic
+                    activeQuery = query.replace(/ /g, '-');
+                }
                 
                 // --- 1. Select the Source List ---
                 let sourceList;
                 
-                // NEW: If "Maximized" sort is chosen, force use of wb_list_max
                 if (sortFilterType === 'maximized') {
                     sourceList = wbListMax;
                 } else {
-                    // Otherwise use the standard Unique Filter selection
                     switch (uniqueFilterType) {
                         case 'word-bomb': sourceList = Array.from(wordBombList); break;
                         case 'names': sourceList = Array.from(nameList); break;
@@ -1413,31 +1418,26 @@
                     }
                 }
                 
-                // --- 2. Setup Pattern Matching Logic ---
+                // --- 2. Setup Pattern Matching Logic (Using activeQuery) ---
                 if (uniqueFilterType === 'pattern') {
-                    try { patternRegex = new RegExp(query.replace(/_/g, '.'), 'i');
+                    try { patternRegex = new RegExp(activeQuery.replace(/_/g, '.'), 'i');
                     } catch (e) { return []; }
                 }
                 if (uniqueFilterType === 'v-c-pattern') {
                     try {
-                        const pattern = query.replace(/v/gi, '[aeiouy]').replace(/c/gi, '[bcdfghjklmnpqrstvwxyz]');
+                        const pattern = activeQuery.replace(/v/gi, '[aeiouy]').replace(/c/gi, '[bcdfghjklmnpqrstvwxyz]');
                         patternRegex = new RegExp(`^${pattern}$`);
                     } catch (e) { return []; }
                 }
                 if (uniqueFilterType === 'anagram') {
-                    queryCharMap = getCharMap(query);
+                    queryCharMap = getCharMap(activeQuery);
                 }
                 if (uniqueFilterType === 'include-all') {
-                    queryLetterSet = new Set(query.split(''));
+                    queryLetterSet = new Set(activeQuery.split(''));
                 }
 
                 // --- 3. Filter the List ---
                 const specializedLists = ['countries', 'names', 'brands', 'bad', 'science', 'jobs', 'languages', 'phobias', 'animals', 'sports', 'colors', 'board-games', 'video-games', 'foods', 'cities', 'diseases', 'religions', 'palindromes'];
-                
-                // If we are using "Maximized", we generally want to respect user filters, 
-                // effectively treating it like a "Standard" search but with a custom list.
-                // So we enable permanent filters unless a specific Unique Filter is active AND we aren't in maximized mode.
-                // Simplified: If 'maximized', use filters. If 'specialized list', don't.
                 const usePermanentFilters = sortFilterType === 'maximized' || !specializedLists.includes(uniqueFilterType);
 
                 for (const word of sourceList) {
@@ -1466,11 +1466,11 @@
                             break;
                         default: 
                             if(sortFilterType === 'starting') {
-                                matchesBase = word.startsWith(query);
+                                matchesBase = word.startsWith(activeQuery);
                             } else if (sortFilterType === 'ending') {
-                                matchesBase = word.endsWith(query);
+                                matchesBase = word.endsWith(activeQuery);
                             } else {
-                                matchesBase = (query.length === 0) ? true : word.includes(query);
+                                matchesBase = (activeQuery.length === 0) ? true : word.includes(activeQuery);
                             }
                             break;
                     }
@@ -1501,7 +1501,6 @@
                     }
                     if (result.length === 0) return [];
 
-                    // Frequency Sorting (Ignored if Maximized to preserve order)
                     if (sortFilterType !== 'maximized' && uniqueFilterType !== 'countries' && uniqueFilterType !== 'cities') {
                         switch (sortFilterType) {
                             case 'common': {
@@ -1534,7 +1533,6 @@
 
                 let finalResults = processCandidates(primaryCandidates);
 
-                // Fallback Logic
                 if (finalResults.length === 0 && fallbackCandidates.length > 0) {
                      finalResults = processCandidates(fallbackCandidates);
                 }
