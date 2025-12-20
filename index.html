@@ -764,6 +764,7 @@
                         <option value="include-all">Include All Letters</option>
                         <option value="word-bomb">Word-Bomb List (wb_list.txt)</option>
                         <option value="french">French List (french_list.txt)</option>
+                        <option value="spanish">Spanish List (spanish_list.txt)</option>
                         <hr>
                         <option value="bad">Bad / Explicit</option>
                         <option value="brands">Brands</option>
@@ -971,6 +972,7 @@
             const synth = window.speechSynthesis;
             let wordBombList = new Set();
             let frenchList = new Set(); // <--- ADD THIS LINE
+            let spanishList = new Set();
             let wordBombSelected = new Set();
             let isDefineMode = false;
             let isCrazyMode = false;
@@ -1314,6 +1316,7 @@
                         const wbMaxSet = new Set();
                                 // --- NEW: Load French List ---
                 await loadList('french_list.txt', frenchList);
+                await loadList('spanish_list.txt', spanishList);
                 await loadList('wb_list_max.txt', wbMaxSet);
                 wbListMax = Array.from(wbMaxSet); // Convert to Array to preserve order
                 console.log(`Loaded wb_list_max.txt: ${wbListMax.length} items.`);
@@ -1375,7 +1378,7 @@
             }
         }
 
-// --- findWords (Updated for French List) ---
+// --- findWords (Updated for Spanish List) ---
             function findWords(query, uniqueFilterType, sortFilterType, lenFilter, wordsToExclude = []) {
                 const excludeSet = new Set(wordsToExclude);
                 let primaryCandidates = [];  
@@ -1385,9 +1388,9 @@
                 let queryCharMap = null;
                 let queryLetterSet = null;
 
-                // --- NEW: Handle Space-to-Hyphen for Word-Bomb AND French ---
+                // --- NEW: Handle Space-to-Hyphen for Word-Bomb, French, AND Spanish ---
                 let activeQuery = query;
-                if (uniqueFilterType === 'word-bomb' || uniqueFilterType === 'french') {
+                if (uniqueFilterType === 'word-bomb' || uniqueFilterType === 'french' || uniqueFilterType === 'spanish') {
                     // Replace all spaces with hyphens for the actual search logic
                     activeQuery = query.replace(/ /g, '-');
                 }
@@ -1400,7 +1403,8 @@
                 } else {
                     switch (uniqueFilterType) {
                         case 'word-bomb': sourceList = Array.from(wordBombList); break;
-                        case 'french': sourceList = Array.from(frenchList); break; // <--- NEW CASE
+                        case 'french': sourceList = Array.from(frenchList); break;
+                        case 'spanish': sourceList = Array.from(spanishList); break; // <--- NEW CASE
                         case 'names': sourceList = Array.from(nameList); break;
                         case 'brands': sourceList = Array.from(brandsSet); break;
                         case 'countries': sourceList = Array.from(countriesSet); break;
