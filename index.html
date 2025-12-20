@@ -765,6 +765,7 @@
                         <option value="word-bomb">Word-Bomb List (wb_list.txt)</option>
                         <option value="french">French List (french_list.txt)</option>
                         <option value="spanish">Spanish List (spanish_list.txt)</option>
+                        <option value="portuguese">Brazilian Portuguese (portuguese_list.txt)</option>
                         <hr>
                         <option value="bad">Bad / Explicit</option>
                         <option value="brands">Brands</option>
@@ -973,6 +974,7 @@
             let wordBombList = new Set();
             let frenchList = new Set(); // <--- ADD THIS LINE
             let spanishList = new Set();
+            let portugueseList = new Set();
             let wordBombSelected = new Set();
             let isDefineMode = false;
             let isCrazyMode = false;
@@ -1314,9 +1316,9 @@
                 // --- Load WB List from file ---
                 await loadList('wb_list.txt', wordBombList);
                         const wbMaxSet = new Set();
-                                // --- NEW: Load French List ---
                 await loadList('french_list.txt', frenchList);
                 await loadList('spanish_list.txt', spanishList);
+                await loadList('portuguese_list.txt', portugueseList);
                 await loadList('wb_list_max.txt', wbMaxSet);
                 wbListMax = Array.from(wbMaxSet); // Convert to Array to preserve order
                 console.log(`Loaded wb_list_max.txt: ${wbListMax.length} items.`);
@@ -1378,7 +1380,7 @@
             }
         }
 
-// --- findWords (Updated for Spanish List) ---
+// --- findWords (Updated for Portuguese List) ---
             function findWords(query, uniqueFilterType, sortFilterType, lenFilter, wordsToExclude = []) {
                 const excludeSet = new Set(wordsToExclude);
                 let primaryCandidates = [];  
@@ -1388,9 +1390,9 @@
                 let queryCharMap = null;
                 let queryLetterSet = null;
 
-                // --- NEW: Handle Space-to-Hyphen for Word-Bomb, French, AND Spanish ---
+                // --- NEW: Handle Space-to-Hyphen for Word-Bomb, French, Spanish, AND Portuguese ---
                 let activeQuery = query;
-                if (uniqueFilterType === 'word-bomb' || uniqueFilterType === 'french' || uniqueFilterType === 'spanish') {
+                if (uniqueFilterType === 'word-bomb' || uniqueFilterType === 'french' || uniqueFilterType === 'spanish' || uniqueFilterType === 'portuguese') {
                     // Replace all spaces with hyphens for the actual search logic
                     activeQuery = query.replace(/ /g, '-');
                 }
@@ -1404,7 +1406,8 @@
                     switch (uniqueFilterType) {
                         case 'word-bomb': sourceList = Array.from(wordBombList); break;
                         case 'french': sourceList = Array.from(frenchList); break;
-                        case 'spanish': sourceList = Array.from(spanishList); break; // <--- NEW CASE
+                        case 'spanish': sourceList = Array.from(spanishList); break;
+                        case 'portuguese': sourceList = Array.from(portugueseList); break; // <--- NEW CASE
                         case 'names': sourceList = Array.from(nameList); break;
                         case 'brands': sourceList = Array.from(brandsSet); break;
                         case 'countries': sourceList = Array.from(countriesSet); break;
@@ -1548,7 +1551,6 @@
                 
                 return finalResults;
             }
-            
             // --- copyToClipboard (Updated) ---
             function copyToClipboard(formattedWord, originalWord, element, query = "") {
                 navigator.clipboard.writeText(formattedWord).then(() => {
