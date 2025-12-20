@@ -270,6 +270,14 @@
             transform: translateY(-2px);
             z-index: 10;
         }
+        /* The container for the actual word text + icon to keep them horizontal */
+        .word-content-row {
+            display: inline-flex;
+            align-items: center;
+            white-space: nowrap;
+            gap: 3px;
+        }
+        
         .word-lang-label {
             font-size: 0.6rem;
             text-transform: uppercase;
@@ -1705,10 +1713,8 @@
                     const wordElement = document.createElement('span');
                     const formattedWord = applyCapping(originalWord, capMode);
                     
-                    // Highlight logic needs to handle WB queries (spaces vs hyphens)
                     let displayQuery = query;
                     if (uniqueFilterType === 'word-bomb' && (query.startsWith(':') || query.includes(' '))) {
-                         // Simple highlight attempt for WB
                          displayQuery = query.replace(/^:.. /, '').replace(/ /g, '-');
                     }
                     
@@ -1721,7 +1727,8 @@
                         langLabel = `<div class="word-lang-label">${getLangName(lang)}</div>`;
                     }
                     
-                    wordElement.innerHTML = langLabel + highlightedHtml + ttsIcon;
+                    // FIXED HERE: Wrap content in word-content-row to keep it horizontal
+                    wordElement.innerHTML = `${langLabel}<div class="word-content-row">${highlightedHtml}${ttsIcon}</div>`;
                     wordElement.className = `word-item lang-${lang}`;
                     wordElement.dataset.originalWord = originalWord;
                     
@@ -1748,7 +1755,6 @@
             }
 
             function handleGameSearch(query, uniqueFilterType, sortFilterType, lenFilter, capMode) {
-                // Game mode logic adapted to new object return type
                 if (query.length < 1 && permanentIncludeList.length < 1) { 
                     resultsContainer.textContent = 'Game Mode: Please enter letters to search.';
                     return;
@@ -1760,7 +1766,6 @@
                 const usedWordsInThisGame = new Set(currentGameSession.words.map(item => item.word));
                 let matches = findWords(query, uniqueFilterType, sortFilterType, lenFilter, Array.from(usedWordsInThisGame));
 
-                // Filter objects
                 matches = matches.filter(item => {
                     const word = item.word;
                     const isSingleWord = !word.includes(' ') && !word.includes('-');
@@ -1773,7 +1778,6 @@
                     return;
                 }
                 
-                // Tiebreaker logic (simplified for object array)
                 let tieBreakerList = matches;
                 if(sortFilterType === 'longest' || lenFilter === 'longest') {
                     const best = matches[0].word.length;
@@ -2182,8 +2186,6 @@
                 header.innerHTML = `Words for: <span class="highlight">${prompt}</span>`;
                 resultsContainer.appendChild(header);
                 
-                // Reuse existing display logic by calling handleNormalSearch logic manually or just rendering
-                // Keeping it simple since prompts are just English list usually:
                 let displayList = wordList.sort();
                 const fragment = document.createDocumentFragment();
                 for (const originalWord of displayList.slice(0, 300)) {
