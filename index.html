@@ -271,11 +271,10 @@
             z-index: 10;
         }
         /* The container for the actual word text + icon to keep them horizontal */
+        /* Fixed: Use block layout to prevent gaps inside words */
         .word-content-row {
-            display: inline-flex;
-            align-items: center;
+            display: inline-block; 
             white-space: nowrap;
-            gap: 3px;
         }
         
         .word-lang-label {
@@ -386,7 +385,12 @@
             overflow-y: auto;
             list-style: none; padding: 0;
         }
-        .highlight { font-weight: bold; color: var(--secondary-color);
+        .highlight { 
+            font-weight: bold; 
+            color: var(--secondary-color);
+            margin: 0;
+            padding: 0;
+            display: inline; /* Strictly inline to prevent breaks */
         }
         .game-session {
             background: var(--history-box-bg);
