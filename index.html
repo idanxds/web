@@ -270,8 +270,7 @@
             transform: translateY(-2px);
             z-index: 10;
         }
-        /* The container for the actual word text + icon to keep them horizontal */
-        /* Fixed: Use block layout to prevent gaps inside words */
+        /* Container to keep text horizontal */
         .word-content-row {
             display: inline-block; 
             white-space: nowrap;
@@ -284,6 +283,15 @@
             margin-bottom: 2px;
             opacity: 0.8;
             letter-spacing: 0.5px;
+        }
+        
+        /* Language Separator Line */
+        .lang-separator {
+            width: 100%;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--history-border), transparent);
+            margin: 15px 0;
+            display: block;
         }
         
         /* Language Glows */
@@ -326,7 +334,7 @@
         .word-item.copied {
             background: linear-gradient(135deg, var(--copied-color-start), var(--copied-color-end));
             color: #111; font-weight: bold;
-            box-shadow: none !important; /* Override glow when copied if preferred, or keep it */
+            box-shadow: none !important; 
         }
         .word-item.word-bomb-selected {
             background: var(--bomb-selected-color);
@@ -335,12 +343,20 @@
         }
         .tts-icon {
             font-size: 0.8em;
-            margin-left: 4px;
+            margin-left: 5px;
             opacity: 0.5;
             transition: opacity 0.2s;
             cursor: pointer;
+            vertical-align: middle;
         }
         .word-item:hover .tts-icon { opacity: 1;
+        }
+        
+        .highlight { 
+            font-weight: bold; 
+            color: var(--secondary-color);
+            margin: 0; padding: 0; 
+            display: inline;
         }
         
         #word-tooltip {
@@ -384,13 +400,6 @@
             height: calc(100% - 160px);
             overflow-y: auto;
             list-style: none; padding: 0;
-        }
-        .highlight { 
-            font-weight: bold; 
-            color: var(--secondary-color);
-            margin: 0;
-            padding: 0;
-            display: inline; /* Strictly inline to prevent breaks */
         }
         .game-session {
             background: var(--history-box-bg);
@@ -1439,14 +1448,36 @@
                     
                     if (activeQuery.length === 0) return [];
 
-                    // Helper to search a specific set
+                    // Helper to search a specific set AND filter
                     const searchSet = (set, langCode) => {
                         const results = [];
                         for (const word of set) {
-                             if (!excludeSet.has(word) && word.includes(activeQuery)) {
+                             if (excludeSet.has(word)) continue; // Game Excludes
+                             if (permanentExcludeList.length > 0 && permanentExcludeList.some(ex => word.includes(ex))) continue; // User Excludes
+                             if (permanentIncludeList.length > 0 && !permanentIncludeList.every(inc => word.includes(inc))) continue; // User Includes
+                             
+                             if (word.includes(activeQuery)) {
                                  results.push({ word: word, lang: langCode });
                              }
                         }
+                        
+                        // Apply Length Filter Locally
+                        if (lenFilter !== 'any' && lenFilter !== 'longest' && lenFilter !== 'shortest') {
+                             const length = parseInt(lenFilter, 10);
+                             return results.filter(item => item.word.length === length);
+                        }
+                        
+                        // Apply Sort Locally BEFORE interleaving
+                        if (lenFilter === 'longest') {
+                            results.sort((a, b) => b.word.length - a.word.length);
+                        } else if (lenFilter === 'shortest') {
+                            results.sort((a, b) => a.word.length - b.word.length);
+                        } else if (sortFilterType === 'longest') {
+                             results.sort((a, b) => b.word.length - a.word.length);
+                        } else if (sortFilterType === 'shortest') {
+                             results.sort((a, b) => a.word.length - b.word.length);
+                        }
+                        
                         return results;
                     };
                     
@@ -1472,7 +1503,7 @@
                     
                     // Interleave results: 10 of each, looping
                     let finalInterleaved = [];
-                    // Find max length to know when to stop (roughly)
+                    // Find max length to know when to stop
                     const maxLen = Math.max(resultsEn.length, resultsFr.length, resultsSp.length, resultsPo.length, resultsIn.length);
                     
                     for (let i = 0; i < maxLen; i += 10) {
@@ -1482,20 +1513,6 @@
                                 finalInterleaved.push(...slice);
                             }
                         }
-                    }
-                    
-                    // Length filtering
-                    if (lenFilter !== 'any' && lenFilter !== 'longest' && lenFilter !== 'shortest') {
-                         const length = parseInt(lenFilter, 10);
-                         finalInterleaved = finalInterleaved.filter(item => item.word.length === length);
-                    }
-                    
-                    // Note: Sorting is mostly skipped here to preserve the "Interleaved" structure requested
-                    // but length sorting can still be applied if explicitly requested
-                    if (lenFilter === 'longest') {
-                        finalInterleaved.sort((a, b) => b.word.length - a.word.length);
-                    } else if (lenFilter === 'shortest') {
-                         finalInterleaved.sort((a, b) => a.word.length - b.word.length);
                     }
                     
                     return finalInterleaved; // Returns objects {word, lang}
@@ -1710,9 +1727,19 @@
                 summary.textContent = `Showing ${wordsToDisplay.length} of ${totalMatches} matching words.`;
                 fragment.appendChild(summary);
 
+                let previousLang = null;
+
                 for (const item of wordsToDisplay) {
                     const originalWord = item.word;
                     const lang = item.lang;
+                    
+                    // Insert Separator if language changes
+                    if (previousLang !== null && lang !== previousLang) {
+                        const sep = document.createElement('div');
+                        sep.className = 'lang-separator';
+                        fragment.appendChild(sep);
+                    }
+                    previousLang = lang;
                     
                     const wordElement = document.createElement('span');
                     const formattedWord = applyCapping(originalWord, capMode);
@@ -1725,13 +1752,12 @@
                     const highlightedHtml = highlightQuery(formattedWord, displayQuery);
                     const ttsIcon = `<span class="tts-icon">🔊</span>`;
                     
-                    // Add Lang Label
                     let langLabel = '';
                     if (lang !== 'default') {
                         langLabel = `<div class="word-lang-label">${getLangName(lang)}</div>`;
                     }
                     
-                    // FIXED HERE: Wrap content in word-content-row to keep it horizontal
+                    // FIXED: Using word-content-row for horizontal layout
                     wordElement.innerHTML = `${langLabel}<div class="word-content-row">${highlightedHtml}${ttsIcon}</div>`;
                     wordElement.className = `word-item lang-${lang}`;
                     wordElement.dataset.originalWord = originalWord;
