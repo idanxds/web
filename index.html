@@ -1576,10 +1576,25 @@
                     }
                     
                     if (sortFilterType === 'common' || sortFilterType === 'least-common') {
-                        // Freq logic omitted for brevity in standard fallback, usually fine
+                        const candidatesWithFreq = result.filter(w => wordFrequencyMap.has(w));
+                        if (candidatesWithFreq.length > 0) {
+                            if (sortFilterType === 'common') {
+                                candidatesWithFreq.sort((a, b) => (wordFrequencyMap.get(b) || 0) - (wordFrequencyMap.get(a) || 0));
+                                const best = wordFrequencyMap.get(candidatesWithFreq[0]);
+                                result = candidatesWithFreq.filter(w => wordFrequencyMap.get(w) === best);
+                            } else {
+                                candidatesWithFreq.sort((a, b) => (wordFrequencyMap.get(a) || 0) - (wordFrequencyMap.get(b) || 0));
+                                const best = wordFrequencyMap.get(candidatesWithFreq[0]);
+                                result = candidatesWithFreq.filter(w => wordFrequencyMap.get(w) === best);
+                            }
+                        }
                     }
+                    
                     if (lenFilter === 'longest') result.sort((a, b) => b.length - a.length);
                     if (lenFilter === 'shortest') result.sort((a, b) => a.length - b.length);
+                    
+                    if (sortFilterType === 'none' && lenFilter === 'any') shuffleArray(result);
+                    
                     return result;
                 };
 
@@ -1655,8 +1670,6 @@
             }
             
             function runCrazySearch(query) {
-               // (Crazy mode implementation omitted for brevity, assuming similar structure as before but mapping results)
-               // For now, disabling or keeping basic:
                resultsContainer.textContent = "Crazy Mode not fully supported with new Multi-Lang structure yet.";
             }
             
@@ -1784,7 +1797,6 @@
             }
             
             async function defineWord(word) {
-                // ... (Existing Define Logic) ...
                 defineModalTitle.textContent = `Defining "${word}"...`;
                 defineSearchInput.value = word;
                 document.getElementById('define-modal-summary').innerHTML = '<em>Loading...</em>';
@@ -1806,10 +1818,6 @@
                     }
                 }
             }
-            // ... (Rest of Define/Translate/Events similar to previous, ensured they are included in full file context above)
-            
-            // Re-adding essential helper functions for Define/Translate missing from snippet above due to length constraint
-            // (These should be pasted back in from previous version if truncated, but included here for completeness)
             
             async function fetchDictionaryApi(word) {
                 const response = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${word}`);
@@ -1822,7 +1830,9 @@
                     fullHtml += `<h4>(${m.partOfSpeech})</h4>`;
                     m.definitions.forEach((d, i) => fullHtml += `<p><b>${i+1}.</b> ${d.definition}</p>`);
                 });
-                summaryHtml = `<h3>${entry.word}</h3><p>${entry.meanings[0].definitions[0].definition}</p>`;
+                if(entry.meanings[0] && entry.meanings[0].definitions[0]) {
+                    summaryHtml = `<h3>${entry.word}</h3><p>${entry.meanings[0].definitions[0].definition}</p>`;
+                }
                 return { title: `Definition: ${entry.word}`, summaryHtml, fullHtml };
             }
 
@@ -1854,9 +1864,78 @@
                 synth.speak(utterance);
             }
             
-            // Calculation stats logic omitted for brevity but should remain from previous version
-             function calculateStatsAndPrompts() { /* ... */ }
-             function populateStatsModal() { /* ... */ }
+             function calculateStatsAndPrompts() {
+                dictionaryStats.totalWords = allCleanWords.length;
+                dictionaryStats.freqWords = wordFrequencyMap.size;
+                let totalLength = 0;
+                let maxLength = 0;
+                const lengthMap = new Map();
+                for (const word of allCleanWords) {
+                    const len = word.length;
+                    totalLength += len;
+                    lengthMap.set(len, (lengthMap.get(len) || 0) + 1);
+                    if (len > maxLength) maxLength = len;
+                    if (word.length >= 3) {
+                        for (let i = 0; i <= word.length - 3; i++) {
+                            const prompt = word.substring(i, i + 3);
+                            if (!threeLetterPromptMap.has(prompt)) {
+                                threeLetterPromptMap.set(prompt, new Set());
+                            }
+                            threeLetterPromptMap.get(prompt).add(word);
+                        }
+                    }
+                }
+                threeLetterPromptMap.forEach((wordSet, prompt) => {
+                    const count = wordSet.size;
+                    if (!promptsByCountMap.has(count)) promptsByCountMap.set(count, []);
+                    promptsByCountMap.get(count).push(prompt);
+                });
+                dictionaryStats.avgLength = (totalLength / allCleanWords.length).toFixed(1);
+                dictionaryStats.lengthDistribution = lengthMap;
+                dictionaryStats.maxLength = maxLength;
+                populateLengthFilter(maxLength);
+            }
+            
+            function populateLengthFilter(maxLength) {
+                const fragment = document.createDocumentFragment();
+                for (let i = 1; i <= maxLength; i++) {
+                    const option = document.createElement('option');
+                    option.value = i;
+                    option.textContent = `Length = ${i}`;
+                    fragment.appendChild(option);
+                }
+                lengthFilter.appendChild(fragment);
+            }
+            
+            function populateStatsModal() {
+                statTotalWords.textContent = dictionaryStats.totalWords.toLocaleString();
+                statFreqWords.textContent = dictionaryStats.freqWords.toLocaleString();
+                statAvgLength.textContent = dictionaryStats.avgLength;
+                statsChart.innerHTML = '';
+                let maxCount = 0;
+                for (const count of dictionaryStats.lengthDistribution.values()) {
+                    if (count > maxCount) maxCount = count;
+                }
+                for (let i = 1; i <= dictionaryStats.maxLength; i++) {
+                    const count = dictionaryStats.lengthDistribution.get(i) || 0;
+                    if (count === 0) continue; 
+                    const bar = document.createElement('div');
+                    bar.className = 'chart-bar';
+                    const heightPercent = (count / maxCount) * 100;
+                    bar.style.height = `${heightPercent}%`;
+                    bar.innerHTML = `<span class="bar-label">${i}</span>`;
+                    bar.title = `${count.toLocaleString()} words of length ${i}`;
+                    statsChart.appendChild(bar);
+                }
+                const totalCopied = allCopiedWords.size;
+                const gameSessionsCount = gameSessions.length;
+                let avgWords = 0;
+                const totalGameWords = gameSessions.reduce((acc, s) => acc + s.words.length, 0);
+                if (gameSessionsCount > 0) avgWords = (totalGameWords / gameSessionsCount).toFixed(1);
+                statTotalCopied.textContent = totalCopied.toLocaleString();
+                statGameSessions.textContent = gameSessionsCount.toLocaleString();
+                statAvgWordsGame.textContent = avgWords;
+            }
 
             // Event Listeners
             searchForm.addEventListener('submit', handleSearch);
@@ -1868,7 +1947,304 @@
                 saveState();
             }
             
-            // ... (Includes/Excludes/GameToggle/Softlock Listeners same as previous) ...
+            function renderIncludeExcludeTags() {
+                includeListTags.innerHTML = '';
+                permanentIncludeList.forEach(item => {
+                    const tag = document.createElement('span');
+                    tag.className = 'filter-tag filter-tag-include';
+                    tag.textContent = item;
+                    const removeBtn = document.createElement('button');
+                    removeBtn.className = 'remove-tag-btn';
+                    removeBtn.innerHTML = '&times;';
+                    removeBtn.dataset.item = item;
+                    tag.appendChild(removeBtn);
+                    includeListTags.appendChild(tag);
+                });
+                excludeListTags.innerHTML = '';
+                permanentExcludeList.forEach(item => {
+                    const tag = document.createElement('span');
+                    tag.className = 'filter-tag filter-tag-exclude';
+                    tag.textContent = item;
+                    const removeBtn = document.createElement('button');
+                    removeBtn.className = 'remove-tag-btn';
+                    removeBtn.innerHTML = '&times;';
+                    removeBtn.dataset.item = item;
+                    tag.appendChild(removeBtn);
+                    excludeListTags.appendChild(tag);
+                });
+            }
+            
+            addIncludeButton.addEventListener('click', () => {
+                const query = searchInput.value.trim().toLowerCase();
+                if (query.length > 0 && !permanentIncludeList.includes(query)) {
+                    permanentIncludeList.push(query);
+                    searchInput.value = '';
+                    renderIncludeExcludeTags();
+                    saveState();
+                }
+            });
+            addExcludeButton.addEventListener('click', () => {
+                const query = searchInput.value.trim().toLowerCase();
+                if (query.length > 0 && !permanentExcludeList.includes(query)) {
+                    permanentExcludeList.push(query);
+                    searchInput.value = '';
+                    renderIncludeExcludeTags();
+                    saveState();
+                }
+            });
+            includeListTags.addEventListener('click', (e) => {
+                if (e.target.classList.contains('remove-tag-btn')) {
+                    const item = e.target.dataset.item;
+                    permanentIncludeList = permanentIncludeList.filter(i => i !== item);
+                    renderIncludeExcludeTags();
+                    saveState();
+                }
+            });
+            excludeListTags.addEventListener('click', (e) => {
+                if (e.target.classList.contains('remove-tag-btn')) {
+                    const item = e.target.dataset.item;
+                    permanentExcludeList = permanentExcludeList.filter(i => i !== item);
+                    renderIncludeExcludeTags();
+                    saveState();
+                }
+            });
+            
+            gameToggleButton.addEventListener('click', () => {
+                isGameMode = !isGameMode;
+                if (isGameMode) {
+                    gameToggleButton.textContent = 'End Game';
+                    gameToggleButton.classList.add('game-active');
+                    softlockButton.style.display = 'inline-block';
+                    resultsContainer.innerHTML = 'Game Mode Started!';
+                    searchInput.placeholder = "e.g., ing";
+                    const date = new Date().toLocaleDateString('en-GB');
+                    currentGameSession = { id: Date.now(), name: `Game - ${date}`, words: [] };
+                    gameSessions.push(currentGameSession);
+                    updateHistoryPanel();
+                    saveState();
+                } else {
+                    gameToggleButton.textContent = 'Start Game';
+                    gameToggleButton.classList.remove('game-active');
+                    softlockButton.style.display = 'none';
+                    resultsContainer.innerHTML = 'Game Mode Ended.';
+                    searchInput.placeholder = "e.g., s_a_e";
+                    currentGameSession = null;
+                    if (isSoftlocked) {
+                        toggleSoftlock();
+                    }
+                    updateHistoryPanel();
+                    saveState();
+                }
+            });
+            softlockButton.addEventListener('click', toggleSoftlock);
+            function toggleSoftlock() {
+                isSoftlocked = !isSoftlocked;
+                if (isSoftlocked) {
+                    softlockBuffer = "";
+                    document.body.classList.add('softlocked');
+                    softlockButton.textContent = 'Unlock';
+                    resultsContainer.innerHTML = `Softlock On. Start typing... (Press Shift to search)`;
+                } else {
+                    document.body.classList.remove('softlocked');
+                    softlockButton.textContent = 'Softlock';
+                    resultsContainer.innerHTML = 'Softlock Off.';
+                }
+            }
+            document.addEventListener('keydown', (e) => {
+                if (!isGameMode || !isSoftlocked) return;
+                e.preventDefault(); 
+                if (e.key === 'Shift') handleSearch(null); 
+                else if (e.key === 'Backspace') softlockBuffer = softlockBuffer.slice(0, -1);
+                else if (e.key.length === 1) softlockBuffer += e.key;
+                
+                if (e.key !== 'Shift') {
+                    resultsContainer.innerHTML = `Softlock On. Prompt: <strong class="highlight">${softlockBuffer}</strong> (Press Shift to search)`;
+                }
+            });
+            
+            resetButton.addEventListener('click', () => {
+                document.querySelectorAll('.word-item.copied').forEach(el => el.classList.remove('copied'));
+                document.querySelectorAll('.word-item.word-bomb-selected').forEach(el => el.classList.remove('word-bomb-selected'));
+                wordBombSelected.clear();
+            });
+            
+            toggleHistoryButton.addEventListener('click', () => historyPanel.classList.toggle('open'));
+            closeHistoryButton.addEventListener('click', () => historyPanel.classList.remove('open'));
+            
+            statsButton.addEventListener('click', () => {
+                populateStatsModal(); 
+                statsModalOverlay.style.display = 'flex';
+            });
+            statsCloseButton.addEventListener('click', () => statsModalOverlay.style.display = 'none');
+            statsModalOverlay.addEventListener('click', (e) => {
+                if (e.target === statsModalOverlay) statsModalOverlay.style.display = 'none';
+            });
+            
+            defineToggleButton.addEventListener('click', () => {
+                isDefineMode = !isDefineMode;
+                if (isDefineMode) {
+                    defineToggleButton.classList.add('active');
+                    defineSearchInput.value = '';
+                    defineModalTitle.textContent = 'Define Word';
+                    document.getElementById('define-modal-summary').innerHTML = 'Type a word in the box above or click a word in the results.';
+                    document.getElementById('define-modal-full').innerHTML = '';
+                    showDefineTab('summary');
+                    defineModalOverlay.style.display = 'flex';
+                } else {
+                    defineToggleButton.classList.remove('active');
+                    defineModalOverlay.style.display = 'none';
+                }
+            });
+            defineCloseButton.addEventListener('click', () => {
+                defineModalOverlay.style.display = 'none';
+                isDefineMode = false;
+                defineToggleButton.classList.remove('active');
+            });
+            defineModalOverlay.addEventListener('click', (e) => {
+                if (e.target === defineModalOverlay) {
+                    defineModalOverlay.style.display = 'none';
+                    isDefineMode = false;
+                    defineToggleButton.classList.remove('active');
+                }
+            });
+            defineModalNav.addEventListener('click', (e) => {
+                if (e.target.classList.contains('modal-tab')) {
+                    showDefineTab(e.target.dataset.tab);
+                }
+            });
+            defineSearchForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const word = defineSearchInput.value.trim();
+                if (word) defineWord(word);
+            });
+            
+            crazyModeButton.addEventListener('click', () => {
+                isCrazyMode = !isCrazyMode;
+                if (isCrazyMode) {
+                    crazyModeButton.classList.add('active');
+                    crazyModeButton.textContent = 'Crazy Mode ON 🤪';
+                } else {
+                    crazyModeButton.classList.remove('active');
+                    crazyModeButton.textContent = 'Crazy Mode 🤪';
+                }
+            });
+            historySearchInput.addEventListener('input', updateHistoryPanel);
+            
+            promptPageButton.addEventListener('click', showPromptsPage);
+            promptHomeButton.addEventListener('click', showMainApp);
+            promptSort.addEventListener('change', renderPromptsList);
+            
+            promptsListContainer.addEventListener('click', (e) => {
+                const promptItem = e.target.closest('.prompt-item');
+                if (promptItem) renderPromptWords(promptItem.dataset.prompt);
+            });
+            
+            function renderPromptsList() {
+                const sortBy = promptSort.value;
+                let sortedPrompts = Array.from(threeLetterPromptMap.entries());
+                if (sortBy === 'count') sortedPrompts.sort((a, b) => b[1].size - a[1].size);
+                else sortedPrompts.sort((a, b) => a[0].localeCompare(b[0]));
+                
+                const fragment = document.createDocumentFragment();
+                for (const [prompt, wordSet] of sortedPrompts) {
+                    const item = document.createElement('div');
+                    item.className = 'prompt-item';
+                    item.dataset.prompt = prompt;
+                    const hasCopied = Array.from(wordSet).some(word => allCopiedWords.has(word));
+                    item.innerHTML = `
+                        <div>
+                            <span class="prompt-name">${prompt}</span>
+                            <span class="prompt-info">(${wordSet.size} words)</span>
+                        </div>
+                        <span class="prompt-check" style="color: ${hasCopied ? 'var(--check-color)' : 'var(--reset-color)'};">${hasCopied ? '✓' : '✗'}</span>
+                    `;
+                    fragment.appendChild(item);
+                }
+                promptsListContainer.innerHTML = '';
+                promptsListContainer.appendChild(fragment);
+            }
+            
+            function showPromptsPage() {
+                mainAppDiv.style.display = 'none';
+                subsearchPageDiv.style.display = 'none';
+                translatorPageDiv.style.display = 'none';
+                promptsPageDiv.style.display = 'block';
+                renderPromptsList();
+            }
+            
+            function renderPromptWords(prompt) {
+                const wordSet = threeLetterPromptMap.get(prompt) || new Set();
+                const wordList = Array.from(wordSet);
+                const capMode = getEffectiveCapMode();
+                showMainApp();
+                resultsContainer.innerHTML = '';
+                const header = document.createElement('h3');
+                header.innerHTML = `Words for: <span class="highlight">${prompt}</span>`;
+                resultsContainer.appendChild(header);
+                
+                // Reuse existing display logic by calling handleNormalSearch logic manually or just rendering
+                // Keeping it simple since prompts are just English list usually:
+                let displayList = wordList.sort();
+                const fragment = document.createDocumentFragment();
+                for (const originalWord of displayList.slice(0, 300)) {
+                     const wordElement = document.createElement('span');
+                    const formattedWord = applyCapping(originalWord, capMode);
+                    const highlightedHtml = highlightQuery(formattedWord, prompt);
+                    const ttsIcon = `<span class="tts-icon">🔊</span>`;
+                    wordElement.innerHTML = highlightedHtml + ttsIcon;
+                    wordElement.className = 'word-item';
+                    wordElement.dataset.originalWord = originalWord;
+                    if (allCopiedWords.has(originalWord)) wordElement.classList.add('copied');
+                    fragment.appendChild(wordElement);
+                }
+                resultsContainer.appendChild(fragment);
+            }
+            
+            subsearchPageButton.addEventListener('click', showSubSearchPage);
+            subsearchHomeButton.addEventListener('click', showMainApp);
+            subsearchForm.addEventListener('submit', handleSubSearch);
+            
+             function showSubSearchPage() {
+                mainAppDiv.style.display = 'none';
+                promptsPageDiv.style.display = 'none';
+                translatorPageDiv.style.display = 'none';
+                subsearchPageDiv.style.display = 'block';
+                subsearchList.innerHTML = '';
+            }
+            
+            function handleSubSearch(event) {
+                if (event) event.preventDefault();
+                const targetCount = parseInt(subsearchInput.value, 10);
+                if (isNaN(targetCount) || targetCount <= 0) return;
+                const matchingPrompts = promptsByCountMap.get(targetCount) || [];
+                if (matchingPrompts.length === 0) {
+                    subsearchList.innerHTML = `<p>No 3-letter prompts found with exactly ${targetCount} words.</p>`;
+                    return;
+                }
+                const fragment = document.createDocumentFragment();
+                matchingPrompts.sort();
+                for (const prompt of matchingPrompts) {
+                    const item = document.createElement('div');
+                    item.className = 'prompt-item';
+                    item.dataset.prompt = prompt;
+                    const wordSet = threeLetterPromptMap.get(prompt);
+                    const hasCopied = Array.from(wordSet).some(word => allCopiedWords.has(word));
+                    item.innerHTML = `
+                        <div>
+                            <span class="prompt-name">${prompt}</span>
+                            <span class="prompt-info">(${wordSet.size} words)</span>
+                        </div>
+                        <span class="prompt-check" style="color: ${hasCopied ? 'var(--check-color)' : 'var(--reset-color)'};">${hasCopied ? '✓' : '✗'}</span>
+                    `;
+                    fragment.appendChild(item);
+                }
+                subsearchList.innerHTML = '';
+                subsearchList.appendChild(fragment);
+            }
+            subsearchList.addEventListener('click', (e) => {
+                const promptItem = e.target.closest('.prompt-item');
+                if (promptItem) renderPromptWords(promptItem.dataset.prompt);
+            });
             
              // --- TRANSLATOR LOGIC ---
             const translatorPageButton = document.getElementById('translator-page-button');
@@ -1958,6 +2334,61 @@
                     addToHistory(originalWord, query, uniqueFilterType, sortFilterType, capMode);
                 }
             });
+            resultsContainer.addEventListener('contextmenu', (e) => {
+                e.preventDefault(); 
+                const wordElement = e.target.closest('.word-item');
+                if (wordElement) {
+                    wordElement.style.transition = 'transform 0.1s ease-out';
+                    wordElement.style.transform = 'scale(1.1)';
+                    setTimeout(() => wordElement.style.transform = 'scale(1)', 100);
+                }
+            });
+             historyContent.addEventListener('click', (e) => {
+                const target = e.target;
+                const sessionElement = target.closest('.game-session');
+                if (!sessionElement) return;
+                
+                if (target.classList.contains('rename-btn')) {
+                    const summary = target.closest('summary');
+                    const sessionNameSpan = summary.querySelector('.session-name');
+                    sessionNameSpan.contentEditable = "true";
+                    sessionNameSpan.focus();
+                    sessionNameSpan.addEventListener('blur', saveRename, { once: true });
+                    sessionNameSpan.addEventListener('keydown', (keyEvent) => {
+                        if (keyEvent.key === 'Enter') {
+                            keyEvent.preventDefault();
+                            sessionNameSpan.blur();
+                        }
+                    });
+                }
+                if (target.classList.contains('delete-session-btn')) {
+                    if (confirm('Delete this game session?')) {
+                        const sessionId = sessionElement.dataset.sessionId;
+                        gameSessions = gameSessions.filter(s => s.id.toString() !== sessionId);
+                        updateHistoryPanel();
+                        saveState();
+                    }
+                }
+                if (target.classList.contains('delete-word-btn')) {
+                    if (sessionElement.classList.contains('locked')) return;
+                    const sessionId = sessionElement.dataset.sessionId;
+                    const wordToDelete = target.dataset.word;
+                    const session = gameSessions.find(s => s.id.toString() === sessionId);
+                    if (session) {
+                        session.words = session.words.filter(item => item.word !== wordToDelete);
+                        updateHistoryPanel();
+                        saveState();
+                    }
+                }
+            });
+            function saveRename(e) {
+                const sessionNameSpan = e.target;
+                sessionNameSpan.contentEditable = "false";
+                const sessionId = sessionNameSpan.closest('.game-session').dataset.sessionId;
+                const session = gameSessions.find(s => s.id.toString() === sessionId);
+                if (session) session.name = sessionNameSpan.textContent.trim();
+                saveState();
+            }
         });
     </script>
 </body>
