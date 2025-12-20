@@ -330,6 +330,13 @@
         .lang-in:hover { box-shadow: 0 0 12px rgba(255, 0, 0, 0.9), 0 0 16px rgba(255, 255, 255, 0.7); }
         .lang-in .word-lang-label { color: #ff8888; }
 
+        .lang-ge { 
+            box-shadow: 0 0 8px rgba(255, 215, 0, 0.6), 0 0 12px rgba(255, 0, 0, 0.4);
+            border-color: rgba(50, 50, 50, 0.5); /* Subtle dark border for black */
+        }
+        .lang-ge:hover { box-shadow: 0 0 12px rgba(255, 215, 0, 0.9), 0 0 16px rgba(255, 0, 0, 0.7); }
+        .lang-ge .word-lang-label { color: #FFD700; }
+
 
         .word-item.copied {
             background: linear-gradient(135deg, var(--copied-color-start), var(--copied-color-end));
@@ -835,6 +842,7 @@
                         <option value="include-all">Include All Letters</option>
                         
                         <option value="word-bomb">Word-Bomb List (Multi-Lang)</option>
+                        <option value="german">German List (german_list.txt)</option>
                         
                         <hr>
                         <option value="bad">Bad / Explicit</option>
@@ -1049,6 +1057,7 @@
             let spanishList = new Set(); 
             let portugueseList = new Set();
             let indonesianList = new Set(); // Indonesian
+            let germanList = new Set(); // German
             
             let brandsSet = new Set();
             let countriesSet = new Set(); 
@@ -1377,6 +1386,7 @@
                 await loadList('spanish_list.txt', spanishList);
                 await loadList('portuguese_list.txt', portugueseList);
                 await loadList('indonesian_list.txt', indonesianList);
+                await loadList('german_list.txt', germanList);
         
                 try {
                     const phRes = await fetch('phobias_list.txt');
@@ -1442,6 +1452,7 @@
                     else if (query.toUpperCase().startsWith(':SP')) { targetLang = 'sp'; activeQuery = query.substring(3).trim(); }
                     else if (query.toUpperCase().startsWith(':PO')) { targetLang = 'po'; activeQuery = query.substring(3).trim(); }
                     else if (query.toUpperCase().startsWith(':IN')) { targetLang = 'in'; activeQuery = query.substring(3).trim(); }
+                    else if (query.toUpperCase().startsWith(':GE') || query.toUpperCase().startsWith(':DE')) { targetLang = 'ge'; activeQuery = query.substring(3).trim(); }
 
                     // Replace space with hyphen for WB search
                     activeQuery = activeQuery.replace(/ /g, '-');
@@ -1487,9 +1498,10 @@
                     const resultsSp = searchSet(spanishList, 'sp');
                     const resultsPo = searchSet(portugueseList, 'po');
                     const resultsIn = searchSet(indonesianList, 'in');
+                    const resultsGe = searchSet(germanList, 'ge');
 
                     // Determine loop order based on selected targetLang
-                    const langOrder = ['en', 'fr', 'sp', 'po', 'in'];
+                    const langOrder = ['en', 'fr', 'sp', 'po', 'in', 'ge'];
                     // Move targetLang to front
                     const targetIndex = langOrder.indexOf(targetLang);
                     if (targetIndex > -1) {
@@ -1498,13 +1510,13 @@
                     }
                     
                     const resultArrays = {
-                        'en': resultsEn, 'fr': resultsFr, 'sp': resultsSp, 'po': resultsPo, 'in': resultsIn
+                        'en': resultsEn, 'fr': resultsFr, 'sp': resultsSp, 'po': resultsPo, 'in': resultsIn, 'ge': resultsGe
                     };
                     
                     // Interleave results: 10 of each, looping
                     let finalInterleaved = [];
                     // Find max length to know when to stop
-                    const maxLen = Math.max(resultsEn.length, resultsFr.length, resultsSp.length, resultsPo.length, resultsIn.length);
+                    const maxLen = Math.max(resultsEn.length, resultsFr.length, resultsSp.length, resultsPo.length, resultsIn.length, resultsGe.length);
                     
                     for (let i = 0; i < maxLen; i += 10) {
                         for (const langCode of langOrder) {
@@ -1525,6 +1537,7 @@
                 let sourceList;
 
                 switch (uniqueFilterType) {
+                    case 'german': sourceList = Array.from(germanList); break;
                     case 'names': sourceList = Array.from(nameList); break;
                     case 'brands': sourceList = Array.from(brandsSet); break;
                     case 'countries': sourceList = Array.from(countriesSet); break;
@@ -1744,6 +1757,7 @@
                     const wordElement = document.createElement('span');
                     const formattedWord = applyCapping(originalWord, capMode);
                     
+                    // Highlight logic needs to handle WB queries (spaces vs hyphens)
                     let displayQuery = query;
                     if (uniqueFilterType === 'word-bomb' && (query.startsWith(':') || query.includes(' '))) {
                          displayQuery = query.replace(/^:.. /, '').replace(/ /g, '-');
@@ -1752,6 +1766,7 @@
                     const highlightedHtml = highlightQuery(formattedWord, displayQuery);
                     const ttsIcon = `<span class="tts-icon">🔊</span>`;
                     
+                    // Add Lang Label
                     let langLabel = '';
                     if (lang !== 'default') {
                         langLabel = `<div class="word-lang-label">${getLangName(lang)}</div>`;
@@ -1780,6 +1795,7 @@
                     case 'sp': return 'Spanish';
                     case 'po': return 'Portuguese';
                     case 'in': return 'Indonesian';
+                    case 'ge': return 'German';
                     default: return '';
                 }
             }
@@ -2345,7 +2361,7 @@
                 
                 if (target.classList.contains('tts-icon')) {
                     e.stopPropagation();
-                    const formattedWord = target.closest('.word-item').textContent.replace(/🔊|📖|✓|✗|English|French|Spanish|Portuguese|Indonesian/g,'').trim();
+                    const formattedWord = target.closest('.word-item').textContent.replace(/🔊|📖|✓|✗|English|French|Spanish|Portuguese|Indonesian|German/g,'').trim();
                     speakWord(formattedWord);
                     return;
                 }
@@ -2354,7 +2370,7 @@
                 if (wordElement) {
                     const originalWord = wordElement.dataset.originalWord;
                     // strip extra text
-                    const cleanText = wordElement.textContent.replace(/🔊|📖|✓|✗|English|French|Spanish|Portuguese|Indonesian/g,'').trim();
+                    const cleanText = wordElement.textContent.replace(/🔊|📖|✓|✗|English|French|Spanish|Portuguese|Indonesian|German/g,'').trim();
                     
                     if (isDefineMode) {
                         defineWord(originalWord);
