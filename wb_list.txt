@@ -1,3 +1,12 @@
+abdominal-bs
+ayyam-i-ha 
+bicaudal-ds
+c-src
+n-src
+v-src
+c-srcs
+n-srcs
+v-srcs
 'A'A
 'A'ALI'I
 'AD'IYAH
