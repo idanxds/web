@@ -337,6 +337,20 @@
         .lang-ge:hover { box-shadow: 0 0 12px rgba(255, 215, 0, 0.9), 0 0 16px rgba(255, 0, 0, 0.7); }
         .lang-ge .word-lang-label { color: #FFD700; }
 
+        .lang-du { 
+            box-shadow: 0 0 8px rgba(255, 0, 0, 0.5), 0 0 12px rgba(0, 0, 255, 0.5);
+            border-color: rgba(200, 200, 200, 0.3);
+        }
+        .lang-du:hover { box-shadow: 0 0 12px rgba(255, 0, 0, 0.8), 0 0 16px rgba(0, 0, 255, 0.8); }
+        .lang-du .word-lang-label { color: #88aaff; }
+
+        .lang-fi { 
+            box-shadow: 0 0 8px rgba(255, 255, 255, 0.8), 0 0 12px rgba(0, 50, 255, 0.6);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+        .lang-fi:hover { box-shadow: 0 0 12px rgba(255, 255, 255, 1), 0 0 16px rgba(0, 50, 255, 0.9); }
+        .lang-fi .word-lang-label { color: #ffffff; }
+
 
         .word-item.copied {
             background: linear-gradient(135deg, var(--copied-color-start), var(--copied-color-end));
@@ -789,6 +803,8 @@
                         <option value="ar">Arabic</option>
                         <option value="hi">Hindi</option>
                         <option value="id">Indonesian</option>
+                        <option value="nl">Dutch</option>
+                        <option value="fi">Finnish</option>
                     </select>
                     
                     <span style="font-weight: bold;">→</span>
@@ -808,6 +824,8 @@
                         <option value="ar">Arabic</option>
                         <option value="hi">Hindi</option>
                         <option value="id">Indonesian</option>
+                        <option value="nl">Dutch</option>
+                        <option value="fi">Finnish</option>
                     </select>
                     
                     <button id="trans-action-btn" class="btn">Translate</button>
@@ -842,7 +860,10 @@
                         <option value="include-all">Include All Letters</option>
                         
                         <option value="word-bomb">Word-Bomb List (Multi-Lang)</option>
-                       
+                        
+                        <option value="german">German List (german_list.txt)</option>
+                        <option value="dutch">Dutch List (dutch_list.txt)</option>
+                        <option value="finnish">Finnish List (finnish_list.txt)</option>
                         
                         <hr>
                         <option value="bad">Bad / Explicit</option>
@@ -1056,8 +1077,10 @@
             let frenchList = new Set(); 
             let spanishList = new Set(); 
             let portugueseList = new Set();
-            let indonesianList = new Set(); // Indonesian
-            let germanList = new Set(); // German
+            let indonesianList = new Set();
+            let germanList = new Set();
+            let dutchList = new Set();
+            let finnishList = new Set();
             
             let brandsSet = new Set();
             let countriesSet = new Set(); 
@@ -1387,6 +1410,8 @@
                 await loadList('portuguese_list.txt', portugueseList);
                 await loadList('indonesian_list.txt', indonesianList);
                 await loadList('german_list.txt', germanList);
+                await loadList('dutch_list.txt', dutchList);
+                await loadList('finnish_list.txt', finnishList);
         
                 try {
                     const phRes = await fetch('phobias_list.txt');
@@ -1453,6 +1478,8 @@
                     else if (query.toUpperCase().startsWith(':PO')) { targetLang = 'po'; activeQuery = query.substring(3).trim(); }
                     else if (query.toUpperCase().startsWith(':IN')) { targetLang = 'in'; activeQuery = query.substring(3).trim(); }
                     else if (query.toUpperCase().startsWith(':GE') || query.toUpperCase().startsWith(':DE')) { targetLang = 'ge'; activeQuery = query.substring(3).trim(); }
+                    else if (query.toUpperCase().startsWith(':DU')) { targetLang = 'du'; activeQuery = query.substring(3).trim(); }
+                    else if (query.toUpperCase().startsWith(':FI')) { targetLang = 'fi'; activeQuery = query.substring(3).trim(); }
 
                     // Replace space with hyphen for WB search
                     activeQuery = activeQuery.replace(/ /g, '-');
@@ -1499,9 +1526,11 @@
                     const resultsPo = searchSet(portugueseList, 'po');
                     const resultsIn = searchSet(indonesianList, 'in');
                     const resultsGe = searchSet(germanList, 'ge');
+                    const resultsDu = searchSet(dutchList, 'du');
+                    const resultsFi = searchSet(finnishList, 'fi');
 
                     // Determine loop order based on selected targetLang
-                    const langOrder = ['en', 'fr', 'sp', 'po', 'in', 'ge'];
+                    const langOrder = ['en', 'fr', 'sp', 'po', 'in', 'ge', 'du', 'fi'];
                     // Move targetLang to front
                     const targetIndex = langOrder.indexOf(targetLang);
                     if (targetIndex > -1) {
@@ -1510,13 +1539,13 @@
                     }
                     
                     const resultArrays = {
-                        'en': resultsEn, 'fr': resultsFr, 'sp': resultsSp, 'po': resultsPo, 'in': resultsIn, 'ge': resultsGe
+                        'en': resultsEn, 'fr': resultsFr, 'sp': resultsSp, 'po': resultsPo, 'in': resultsIn, 'ge': resultsGe, 'du': resultsDu, 'fi': resultsFi
                     };
                     
                     // Interleave results: 10 of each, looping
                     let finalInterleaved = [];
                     // Find max length to know when to stop
-                    const maxLen = Math.max(resultsEn.length, resultsFr.length, resultsSp.length, resultsPo.length, resultsIn.length, resultsGe.length);
+                    const maxLen = Math.max(resultsEn.length, resultsFr.length, resultsSp.length, resultsPo.length, resultsIn.length, resultsGe.length, resultsDu.length, resultsFi.length);
                     
                     for (let i = 0; i < maxLen; i += 10) {
                         for (const langCode of langOrder) {
@@ -1538,6 +1567,8 @@
 
                 switch (uniqueFilterType) {
                     case 'german': sourceList = Array.from(germanList); break;
+                    case 'dutch': sourceList = Array.from(dutchList); break;
+                    case 'finnish': sourceList = Array.from(finnishList); break;
                     case 'names': sourceList = Array.from(nameList); break;
                     case 'brands': sourceList = Array.from(brandsSet); break;
                     case 'countries': sourceList = Array.from(countriesSet); break;
@@ -1796,6 +1827,8 @@
                     case 'po': return 'Portuguese';
                     case 'in': return 'Indonesian';
                     case 'ge': return 'German';
+                    case 'du': return 'Dutch';
+                    case 'fi': return 'Finnish';
                     default: return '';
                 }
             }
@@ -2361,7 +2394,7 @@
                 
                 if (target.classList.contains('tts-icon')) {
                     e.stopPropagation();
-                    const formattedWord = target.closest('.word-item').textContent.replace(/🔊|📖|✓|✗|English|French|Spanish|Portuguese|Indonesian|German/g,'').trim();
+                    const formattedWord = target.closest('.word-item').textContent.replace(/🔊|📖|✓|✗|English|French|Spanish|Portuguese|Indonesian|German|Dutch|Finnish/g,'').trim();
                     speakWord(formattedWord);
                     return;
                 }
@@ -2370,7 +2403,7 @@
                 if (wordElement) {
                     const originalWord = wordElement.dataset.originalWord;
                     // strip extra text
-                    const cleanText = wordElement.textContent.replace(/🔊|📖|✓|✗|English|French|Spanish|Portuguese|Indonesian|German/g,'').trim();
+                    const cleanText = wordElement.textContent.replace(/🔊|📖|✓|✗|English|French|Spanish|Portuguese|Indonesian|German|Dutch|Finnish/g,'').trim();
                     
                     if (isDefineMode) {
                         defineWord(originalWord);
