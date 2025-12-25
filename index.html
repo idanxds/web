@@ -349,7 +349,6 @@
             border-color: rgba(255, 255, 255, 0.3);
         }
         .lang-fi:hover { box-shadow: 0 0 12px rgba(255, 255, 255, 1), 0 0 16px rgba(0, 50, 255, 0.9); }
-        /* Changed to Bright Blue for Visibility */
         .lang-fi .word-lang-label { color: #00ccff; }
 
 
@@ -1498,9 +1497,6 @@
                              if (permanentExcludeList.length > 0 && permanentExcludeList.some(ex => word.includes(ex))) continue; // User Excludes
                              if (permanentIncludeList.length > 0 && !permanentIncludeList.every(inc => word.includes(inc))) continue; // User Includes
                              
-                             // Check Missing Filter
-                             if (sortFilterType === 'missing' && existingSet.has(word)) continue;
-
                              if (word.includes(activeQuery)) {
                                  results.push({ word: word, lang: langCode });
                              }
@@ -1561,6 +1557,11 @@
                                 finalInterleaved.push(...slice);
                             }
                         }
+                    }
+                    
+                    // APPLY MISSING FILTER AT THE END
+                    if (sortFilterType === 'missing') {
+                        finalInterleaved = finalInterleaved.filter(item => !existingSet.has(item.word));
                     }
                     
                     return finalInterleaved; // Returns objects {word, lang}
