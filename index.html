@@ -349,7 +349,6 @@
             border-color: rgba(255, 255, 255, 0.3);
         }
         .lang-fi:hover { box-shadow: 0 0 12px rgba(255, 255, 255, 1), 0 0 16px rgba(0, 50, 255, 0.9); }
-        /* Changed to Bright Blue for Visibility */
         .lang-fi .word-lang-label { color: #00ccff; }
 
 
@@ -1106,6 +1105,12 @@
             let palindromesSet = new Set();
 
             // --- Utility Functions ---
+            
+            // Strict Cleaning Function for Comparisons
+            function cleanForExistingCheck(str) {
+                return str.toLowerCase().replace(/[\^*]/g, '').trim();
+            }
+
             function shuffleArray(array) {
                 for (let i = array.length - 1; i > 0; i--) {
                     const j = Math.floor(Math.random() * (i + 1));
@@ -1359,15 +1364,16 @@
         async function loadAndProcessFile() {
             try {
                 loadingMessage.style.display = 'block';
-                const loadList = async (filename, targetSet, normalize = false) => {
+                const loadList = async (filename, targetSet, isExistingFile = false) => {
                     try {
                         const res = await fetch(filename);
                         if (res.ok) {
                             const text = await res.text();
                             text.split('\n').forEach(line => {
                                 let word = line.trim();
-                                if (normalize) {
-                                    word = word.toLowerCase().replace(/[\^*]/g, ''); // Strip symbols for existing.txt
+                                // If it's the existing file, clean it aggressively
+                                if (isExistingFile) {
+                                    word = cleanForExistingCheck(word);
                                 } else {
                                     word = word.toLowerCase();
                                 }
@@ -1422,7 +1428,7 @@
                 await loadList('dutch_list.txt', dutchList);
                 await loadList('finnish_list.txt', finnishList);
                 
-                // --- Load Existing List (Normalized for comparison) ---
+                // Load existing.txt using strict cleaning
                 await loadList('existing.txt', existingSet, true); 
         
                 try {
@@ -1483,15 +1489,15 @@
                     let activeQuery = query.replace(/ /g, '-');
                     const results = [];
                     for (const word of wordBombList) {
-                         // Clean word for comparison (remove ^ and *)
-                         const cleanWord = word.replace(/[\^*]/g, '');
+                         // Strict clean for check
+                         const cleanWord = cleanForExistingCheck(word);
                          
-                         // Check Filters (Includes/Excludes) on CLEAN word? Or dirty? usually clean matches better
+                         // Check Filters
                          if (excludeSet.has(word)) continue;
                          if (permanentExcludeList.length > 0 && permanentExcludeList.some(ex => cleanWord.includes(ex))) continue; 
                          if (permanentIncludeList.length > 0 && !permanentIncludeList.every(inc => cleanWord.includes(inc))) continue; 
                          
-                         // CORE MISSING LOGIC: If clean word is found in existingSet, SKIP IT.
+                         // CORE MISSING LOGIC
                          if (existingSet.has(cleanWord)) continue;
 
                          if (activeQuery.length === 0 || word.includes(activeQuery)) {
@@ -1499,12 +1505,10 @@
                          }
                     }
                     
-                    // Apply Length Filter
                     if (lenFilter !== 'any' && lenFilter !== 'longest' && lenFilter !== 'shortest') {
                          const length = parseInt(lenFilter, 10);
                          return results.filter(item => item.word.length === length);
                     }
-                    // Apply Sort
                     if (lenFilter === 'longest' || sortFilterType === 'longest') {
                         results.sort((a, b) => b.word.length - a.word.length);
                     } else if (lenFilter === 'shortest' || sortFilterType === 'shortest') {
@@ -1542,16 +1546,22 @@
                                  results.push({ word: word, lang: langCode });
                              }
                         }
-                        // Local Sort
+                        
                         if (lenFilter !== 'any' && lenFilter !== 'longest' && lenFilter !== 'shortest') {
                              const length = parseInt(lenFilter, 10);
                              return results.filter(item => item.word.length === length);
                         }
-                        if (lenFilter === 'longest' || sortFilterType === 'longest') {
+                        
+                        if (lenFilter === 'longest') {
                             results.sort((a, b) => b.word.length - a.word.length);
-                        } else if (lenFilter === 'shortest' || sortFilterType === 'shortest') {
+                        } else if (lenFilter === 'shortest') {
                             results.sort((a, b) => a.word.length - b.word.length);
+                        } else if (sortFilterType === 'longest') {
+                             results.sort((a, b) => b.word.length - a.word.length);
+                        } else if (sortFilterType === 'shortest') {
+                             results.sort((a, b) => a.word.length - b.word.length);
                         }
+                        
                         return results;
                     };
                     
