@@ -349,6 +349,7 @@
             border-color: rgba(255, 255, 255, 0.3);
         }
         .lang-fi:hover { box-shadow: 0 0 12px rgba(255, 255, 255, 1), 0 0 16px rgba(0, 50, 255, 0.9); }
+        /* Changed to Bright Blue for Visibility */
         .lang-fi .word-lang-label { color: #00ccff; }
 
 
@@ -861,6 +862,8 @@
                         
                         <option value="word-bomb">Word-Bomb List (Multi-Lang)</option>
                         
+                        <option value="wb-missing">Word Bomb Missing (English)</option>
+                        
                         <option value="german">German List (german_list.txt)</option>
                         <option value="dutch">Dutch List (dutch_list.txt)</option>
                         <option value="finnish">Finnish List (finnish_list.txt)</option>
@@ -895,7 +898,6 @@
                         <option value="ending">Ending With</option>
                         <option value="common">Most Common</option>
                         <option value="least-common">Least Common</option>
-                        <option value="missing">Missing (Not in existing.txt)</option>
                     </select>
                 </div>
             
@@ -1082,7 +1084,7 @@
             let germanList = new Set();
             let dutchList = new Set();
             let finnishList = new Set();
-            let existingSet = new Set();
+            let existingSet = new Set(); // existing.txt words (normalized)
             
             let brandsSet = new Set();
             let countriesSet = new Set(); 
@@ -1357,13 +1359,18 @@
         async function loadAndProcessFile() {
             try {
                 loadingMessage.style.display = 'block';
-                const loadList = async (filename, targetSet) => {
+                const loadList = async (filename, targetSet, normalize = false) => {
                     try {
                         const res = await fetch(filename);
                         if (res.ok) {
                             const text = await res.text();
                             text.split('\n').forEach(line => {
-                                const word = line.trim().toLowerCase();
+                                let word = line.trim();
+                                if (normalize) {
+                                    word = word.toLowerCase().replace(/[\^*]/g, ''); // Strip symbols for existing.txt
+                                } else {
+                                    word = word.toLowerCase();
+                                }
                                 if (word.length > 0) targetSet.add(word); 
                             });
                             console.log(`Loaded ${filename}: ${targetSet.size} items.`);
@@ -1414,7 +1421,9 @@
                 await loadList('german_list.txt', germanList);
                 await loadList('dutch_list.txt', dutchList);
                 await loadList('finnish_list.txt', finnishList);
-                await loadList('existing.txt', existingSet); // Load Existing List for filtering
+                
+                // --- Load Existing List (Normalized for comparison) ---
+                await loadList('existing.txt', existingSet, true); 
         
                 try {
                     const phRes = await fetch('phobias_list.txt');
@@ -1469,10 +1478,45 @@
                 let primaryCandidates = []; 
                 let fallbackCandidates = []; 
                 
-                // --- 1. Handle Word Bomb Multi-Lang Search ---
+                // --- 1. Handle Word Bomb Missing Filter (Specific Case) ---
+                if (uniqueFilterType === 'wb-missing') {
+                    let activeQuery = query.replace(/ /g, '-');
+                    const results = [];
+                    for (const word of wordBombList) {
+                         // Clean word for comparison (remove ^ and *)
+                         const cleanWord = word.replace(/[\^*]/g, '');
+                         
+                         // Check Filters (Includes/Excludes) on CLEAN word? Or dirty? usually clean matches better
+                         if (excludeSet.has(word)) continue;
+                         if (permanentExcludeList.length > 0 && permanentExcludeList.some(ex => cleanWord.includes(ex))) continue; 
+                         if (permanentIncludeList.length > 0 && !permanentIncludeList.every(inc => cleanWord.includes(inc))) continue; 
+                         
+                         // CORE MISSING LOGIC: If clean word is found in existingSet, SKIP IT.
+                         if (existingSet.has(cleanWord)) continue;
+
+                         if (activeQuery.length === 0 || word.includes(activeQuery)) {
+                             results.push({ word: word, lang: 'en' });
+                         }
+                    }
+                    
+                    // Apply Length Filter
+                    if (lenFilter !== 'any' && lenFilter !== 'longest' && lenFilter !== 'shortest') {
+                         const length = parseInt(lenFilter, 10);
+                         return results.filter(item => item.word.length === length);
+                    }
+                    // Apply Sort
+                    if (lenFilter === 'longest' || sortFilterType === 'longest') {
+                        results.sort((a, b) => b.word.length - a.word.length);
+                    } else if (lenFilter === 'shortest' || sortFilterType === 'shortest') {
+                        results.sort((a, b) => a.word.length - b.word.length);
+                    }
+                    
+                    return results;
+                }
+
+                // --- 2. Handle Word Bomb Multi-Lang Search ---
                 if (uniqueFilterType === 'word-bomb') {
-                    // Check for language code prefix in query
-                    let targetLang = 'en'; // Default
+                    let targetLang = 'en';
                     let activeQuery = query;
 
                     if (query.toUpperCase().startsWith(':FR')) { targetLang = 'fr'; activeQuery = query.substring(3).trim(); }
@@ -1484,45 +1528,33 @@
                     else if (query.toUpperCase().startsWith(':DU')) { targetLang = 'du'; activeQuery = query.substring(3).trim(); }
                     else if (query.toUpperCase().startsWith(':FI')) { targetLang = 'fi'; activeQuery = query.substring(3).trim(); }
 
-                    // Replace space with hyphen for WB search
                     activeQuery = activeQuery.replace(/ /g, '-');
-                    
                     if (activeQuery.length === 0) return [];
 
-                    // Helper to search a specific set AND filter
                     const searchSet = (set, langCode) => {
                         const results = [];
                         for (const word of set) {
-                             if (excludeSet.has(word)) continue; // Game Excludes
-                             if (permanentExcludeList.length > 0 && permanentExcludeList.some(ex => word.includes(ex))) continue; // User Excludes
-                             if (permanentIncludeList.length > 0 && !permanentIncludeList.every(inc => word.includes(inc))) continue; // User Includes
+                             if (excludeSet.has(word)) continue; 
+                             if (permanentExcludeList.length > 0 && permanentExcludeList.some(ex => word.includes(ex))) continue; 
+                             if (permanentIncludeList.length > 0 && !permanentIncludeList.every(inc => word.includes(inc))) continue; 
                              
                              if (word.includes(activeQuery)) {
                                  results.push({ word: word, lang: langCode });
                              }
                         }
-                        
-                        // Apply Length Filter Locally
+                        // Local Sort
                         if (lenFilter !== 'any' && lenFilter !== 'longest' && lenFilter !== 'shortest') {
                              const length = parseInt(lenFilter, 10);
                              return results.filter(item => item.word.length === length);
                         }
-                        
-                        // Apply Sort Locally BEFORE interleaving
-                        if (lenFilter === 'longest') {
+                        if (lenFilter === 'longest' || sortFilterType === 'longest') {
                             results.sort((a, b) => b.word.length - a.word.length);
-                        } else if (lenFilter === 'shortest') {
+                        } else if (lenFilter === 'shortest' || sortFilterType === 'shortest') {
                             results.sort((a, b) => a.word.length - b.word.length);
-                        } else if (sortFilterType === 'longest') {
-                             results.sort((a, b) => b.word.length - a.word.length);
-                        } else if (sortFilterType === 'shortest') {
-                             results.sort((a, b) => a.word.length - b.word.length);
                         }
-                        
                         return results;
                     };
                     
-                    // Search all languages
                     const resultsEn = searchSet(wordBombList, 'en');
                     const resultsFr = searchSet(frenchList, 'fr');
                     const resultsSp = searchSet(spanishList, 'sp');
@@ -1532,9 +1564,7 @@
                     const resultsDu = searchSet(dutchList, 'du');
                     const resultsFi = searchSet(finnishList, 'fi');
 
-                    // Determine loop order based on selected targetLang
                     const langOrder = ['en', 'fr', 'sp', 'po', 'in', 'ge', 'du', 'fi'];
-                    // Move targetLang to front
                     const targetIndex = langOrder.indexOf(targetLang);
                     if (targetIndex > -1) {
                         langOrder.splice(targetIndex, 1);
@@ -1545,9 +1575,7 @@
                         'en': resultsEn, 'fr': resultsFr, 'sp': resultsSp, 'po': resultsPo, 'in': resultsIn, 'ge': resultsGe, 'du': resultsDu, 'fi': resultsFi
                     };
                     
-                    // Interleave results: 10 of each, looping
                     let finalInterleaved = [];
-                    // Find max length to know when to stop
                     const maxLen = Math.max(resultsEn.length, resultsFr.length, resultsSp.length, resultsPo.length, resultsIn.length, resultsGe.length, resultsDu.length, resultsFi.length);
                     
                     for (let i = 0; i < maxLen; i += 10) {
@@ -1559,15 +1587,10 @@
                         }
                     }
                     
-                    // APPLY MISSING FILTER AT THE END
-                    if (sortFilterType === 'missing') {
-                        finalInterleaved = finalInterleaved.filter(item => !existingSet.has(item.word));
-                    }
-                    
-                    return finalInterleaved; // Returns objects {word, lang}
+                    return finalInterleaved; 
                 }
 
-                // --- 2. Standard Search Logic (Non-Word-Bomb) ---
+                // --- 3. Standard Search Logic (Non-Word-Bomb) ---
                 let patternRegex = null;
                 let queryCharMap = null;
                 let queryLetterSet = null;
@@ -1652,11 +1675,6 @@
                 const processStandard = (list) => {
                     let result = list;
                     
-                    // Filter Missing
-                    if (sortFilterType === 'missing') {
-                        result = result.filter(w => !existingSet.has(w));
-                    }
-
                     if (lenFilter !== 'any' && lenFilter !== 'longest' && lenFilter !== 'shortest') {
                         const length = parseInt(lenFilter, 10);
                         result = result.filter(w => w.length === length);
@@ -1688,7 +1706,6 @@
                 let final = processStandard(primaryCandidates);
                 if (final.length === 0 && fallbackCandidates.length > 0) final = processStandard(fallbackCandidates);
                 
-                // Convert string array to object array for consistency with WB return type
                 return final.map(w => ({ word: w, lang: 'default' }));
             }
             
@@ -1768,7 +1785,7 @@
 
             function handleNormalSearch(query, uniqueFilterType, sortFilterType, lenFilter, capMode, preFoundWordsList = null) {
                 resultsContainer.innerHTML = '';
-                if (query.length === 0 && permanentIncludeList.length === 0 && uniqueFilterType !== 'word-bomb' && uniqueFilterType !== 'anagram' && uniqueFilterType !== 'by-countries' && uniqueFilterType !== 'names') return;
+                if (query.length === 0 && permanentIncludeList.length === 0 && uniqueFilterType !== 'word-bomb' && uniqueFilterType !== 'wb-missing' && uniqueFilterType !== 'anagram' && uniqueFilterType !== 'by-countries' && uniqueFilterType !== 'names') return;
                 
                 const foundWordsList = preFoundWordsList || findWords(query, uniqueFilterType, sortFilterType, lenFilter);
                 
@@ -1804,7 +1821,7 @@
                     
                     // Highlight logic needs to handle WB queries (spaces vs hyphens)
                     let displayQuery = query;
-                    if (uniqueFilterType === 'word-bomb' && (query.startsWith(':') || query.includes(' '))) {
+                    if ((uniqueFilterType === 'word-bomb' || uniqueFilterType === 'wb-missing') && (query.startsWith(':') || query.includes(' '))) {
                          displayQuery = query.replace(/^:.. /, '').replace(/ /g, '-');
                     }
                     
