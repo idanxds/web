@@ -1481,7 +1481,6 @@
         }
 
             // --- findWords (HEAVILY MODIFIED for Word-Bomb Multi-Lang) ---
-// --- findWords (FIXED: Changed .every to .some for Include list) ---
             function findWords(query, uniqueFilterType, sortFilterType, lenFilter, wordsToExclude = []) {
                 const excludeSet = new Set(wordsToExclude);
                 let primaryCandidates = []; 
@@ -1498,9 +1497,7 @@
                          // Check Filters
                          if (excludeSet.has(word)) continue;
                          if (permanentExcludeList.length > 0 && permanentExcludeList.some(ex => cleanWord.includes(ex))) continue; 
-                         
-                         // FIXED: Changed .every() to .some() -> "Must match ANY include tag"
-                         if (permanentIncludeList.length > 0 && !permanentIncludeList.some(inc => cleanWord.includes(inc))) continue; 
+                         if (permanentIncludeList.length > 0 && !permanentIncludeList.every(inc => cleanWord.includes(inc))) continue; 
                          
                          // CORE MISSING LOGIC
                          if (existingSet.has(cleanWord)) continue;
@@ -1545,9 +1542,7 @@
                         for (const word of set) {
                              if (excludeSet.has(word)) continue; 
                              if (permanentExcludeList.length > 0 && permanentExcludeList.some(ex => word.includes(ex))) continue; 
-                             
-                             // FIXED: Changed .every() to .some()
-                             if (permanentIncludeList.length > 0 && !permanentIncludeList.some(inc => word.includes(inc))) continue; 
+                             if (permanentIncludeList.length > 0 && !permanentIncludeList.every(inc => word.includes(inc))) continue; 
                              
                              if (word.includes(activeQuery)) {
                                  results.push({ word: word, lang: langCode });
@@ -1680,53 +1675,13 @@
                         let passesPermanent = true;
                         if (usePermanentFilters) {
                             if (permanentExcludeList.length > 0 && permanentExcludeList.some(ex => word.includes(ex))) passesPermanent = false;
-                            
-                            // FIXED: Changed .every() to .some()
-                            if (passesPermanent && permanentIncludeList.length > 0 && !permanentIncludeList.some(inc => word.includes(inc))) passesPermanent = false;
+                            if (passesPermanent && permanentIncludeList.length > 0 && !permanentIncludeList.every(inc => word.includes(inc))) passesPermanent = false;
                         }
 
                         if (passesPermanent) primaryCandidates.push(word);
                         else fallbackCandidates.push(word);
                     }
                 }
-                
-                // Helper for standard list processing
-                const processStandard = (list) => {
-                    let result = list;
-                    
-                    if (lenFilter !== 'any' && lenFilter !== 'longest' && lenFilter !== 'shortest') {
-                        const length = parseInt(lenFilter, 10);
-                        result = result.filter(w => w.length === length);
-                    }
-                    
-                    if (sortFilterType === 'common' || sortFilterType === 'least-common') {
-                        const candidatesWithFreq = result.filter(w => wordFrequencyMap.has(w));
-                        if (candidatesWithFreq.length > 0) {
-                            if (sortFilterType === 'common') {
-                                candidatesWithFreq.sort((a, b) => (wordFrequencyMap.get(b) || 0) - (wordFrequencyMap.get(a) || 0));
-                                const best = wordFrequencyMap.get(candidatesWithFreq[0]);
-                                result = candidatesWithFreq.filter(w => wordFrequencyMap.get(w) === best);
-                            } else {
-                                candidatesWithFreq.sort((a, b) => (wordFrequencyMap.get(a) || 0) - (wordFrequencyMap.get(b) || 0));
-                                const best = wordFrequencyMap.get(candidatesWithFreq[0]);
-                                result = candidatesWithFreq.filter(w => wordFrequencyMap.get(w) === best);
-                            }
-                        }
-                    }
-                    
-                    if (lenFilter === 'longest') result.sort((a, b) => b.length - a.length);
-                    if (lenFilter === 'shortest') result.sort((a, b) => a.length - b.length);
-                    
-                    if (sortFilterType === 'none' && lenFilter === 'any') shuffleArray(result);
-                    
-                    return result;
-                };
-
-                let final = processStandard(primaryCandidates);
-                if (final.length === 0 && fallbackCandidates.length > 0) final = processStandard(fallbackCandidates);
-                
-                return final.map(w => ({ word: w, lang: 'default' }));
-            }
                 
                 // Helper for standard list processing
                 const processStandard = (list) => {
