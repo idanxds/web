@@ -349,6 +349,7 @@
             border-color: rgba(255, 255, 255, 0.3);
         }
         .lang-fi:hover { box-shadow: 0 0 12px rgba(255, 255, 255, 1), 0 0 16px rgba(0, 50, 255, 0.9); }
+        /* Changed to Bright Blue for Visibility */
         .lang-fi .word-lang-label { color: #00ccff; }
 
 
@@ -1300,7 +1301,7 @@
                 
                 gameSessions.forEach(session => {
                     const sessionMatches = session.name.toLowerCase().includes(searchTerm) ||
-                                       (session.words && session.words.some(item => item.word.includes(searchTerm)));
+                                            (session.words && session.words.some(item => item.word.includes(searchTerm)));
                     if (!searchTerm || sessionMatches) {
                         const sessionElement = document.createElement('details');
                         sessionElement.open = !!searchTerm;
@@ -1495,7 +1496,9 @@
                          // Check Filters
                          if (excludeSet.has(word)) continue;
                          if (permanentExcludeList.length > 0 && permanentExcludeList.some(ex => cleanWord.includes(ex))) continue; 
-                         if (permanentIncludeList.length > 0 && !permanentIncludeList.every(inc => cleanWord.includes(inc))) continue; 
+                         
+                         // FIXED: Changed .every() to .some()
+                         if (permanentIncludeList.length > 0 && !permanentIncludeList.some(inc => cleanWord.includes(inc))) continue; 
                          
                          // CORE MISSING LOGIC
                          if (existingSet.has(cleanWord)) continue;
@@ -1540,7 +1543,9 @@
                         for (const word of set) {
                              if (excludeSet.has(word)) continue; 
                              if (permanentExcludeList.length > 0 && permanentExcludeList.some(ex => word.includes(ex))) continue; 
-                             if (permanentIncludeList.length > 0 && !permanentIncludeList.every(inc => word.includes(inc))) continue; 
+                             
+                             // FIXED: Changed .every() to .some()
+                             if (permanentIncludeList.length > 0 && !permanentIncludeList.some(inc => word.includes(inc))) continue; 
                              
                              if (word.includes(activeQuery)) {
                                  results.push({ word: word, lang: langCode });
@@ -1673,7 +1678,9 @@
                         let passesPermanent = true;
                         if (usePermanentFilters) {
                             if (permanentExcludeList.length > 0 && permanentExcludeList.some(ex => word.includes(ex))) passesPermanent = false;
-                            if (passesPermanent && permanentIncludeList.length > 0 && !permanentIncludeList.every(inc => word.includes(inc))) passesPermanent = false;
+                            
+                            // FIXED: Changed .every() to .some() to match ANY filter
+                            if (passesPermanent && permanentIncludeList.length > 0 && !permanentIncludeList.some(inc => word.includes(inc))) passesPermanent = false;
                         }
 
                         if (passesPermanent) primaryCandidates.push(word);
@@ -2187,9 +2194,17 @@
             });
             
             resetButton.addEventListener('click', () => {
+                // 1. Remove classes from current view
                 document.querySelectorAll('.word-item.copied').forEach(el => el.classList.remove('copied'));
                 document.querySelectorAll('.word-item.word-bomb-selected').forEach(el => el.classList.remove('word-bomb-selected'));
+                
+                // 2. Clear Data Structures
                 wordBombSelected.clear();
+                allCopiedWords.clear();
+                wordCopyCountMap.clear();
+                
+                // 3. Save empty state to localStorage
+                saveState();
             });
             
             toggleHistoryButton.addEventListener('click', () => historyPanel.classList.toggle('open'));
