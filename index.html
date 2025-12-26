@@ -349,6 +349,7 @@
             border-color: rgba(255, 255, 255, 0.3);
         }
         .lang-fi:hover { box-shadow: 0 0 12px rgba(255, 255, 255, 1), 0 0 16px rgba(0, 50, 255, 0.9); }
+        /* Changed to Bright Blue for Visibility */
         .lang-fi .word-lang-label { color: #00ccff; }
 
 
@@ -1106,9 +1107,10 @@
 
             // --- Utility Functions ---
             
-            // Strict Cleaning Function for Comparisons
+            // AGGRESSIVE Cleaning Function for Comparisons
+            // Removes EVERYTHING except letters (a-z) and numbers
             function cleanForExistingCheck(str) {
-                return str.toLowerCase().replace(/[\^*]/g, '').trim();
+                return str.toLowerCase().replace(/[^a-z0-9]/g, '');
             }
 
             function shuffleArray(array) {
@@ -1428,7 +1430,7 @@
                 await loadList('dutch_list.txt', dutchList);
                 await loadList('finnish_list.txt', finnishList);
                 
-                // Load existing.txt using strict cleaning
+                // Load existing.txt using STRICT cleaning
                 await loadList('existing.txt', existingSet, true); 
         
                 try {
