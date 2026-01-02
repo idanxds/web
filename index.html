@@ -10,41 +10,80 @@
     
     <style>
         :root {
-            /* Dark Theme (Default) */
+            /* --- Dark Theme (Default) --- */
             --bg-color: #1a1c2c;
-            --box-color: #252a41; --input-bg-color: #3b4262;
-            --text-color: #e0e0e0; --text-muted-color: #9ab; --header-color: #ffffff;
-            --primary-color: #00bcd4; --secondary-color: #0097a7;
-            --history-bg: #1e2236; --history-box-bg: #2f3653; --history-border: #3b4262;
-            --copied-color-start: #84ffff; --copied-color-end: #00e5ff;
+            --box-color: #252a41; 
+            --input-bg-color: #3b4262;
+            --text-color: #e0e0e0; 
+            --text-muted-color: #9ab; 
+            --header-color: #ffffff;
+            --primary-color: #00bcd4; 
+            --secondary-color: #0097a7;
+            --history-bg: #1e2236; 
+            --history-box-bg: #2f3653; 
+            --history-border: #3b4262;
+            --copied-color-start: #84ffff; 
+            --copied-color-end: #00e5ff;
             
-            --game-mode-color: #ffc107; --reset-color: #ff5252;
-            --include-color: #3498db; --exclude-color: #e74c3c;
-            --bomb-selected-color: #2ecc71; --check-color: #2ecc71;
+            /* Word Chip Colors (Dark) - ADDED THIS TO FIX VISIBILITY */
+            --word-bg-color: #3b4262;
+            --word-text-color: #ffffff;
+            
+            --game-mode-color: #ffc107; 
+            --reset-color: #ff5252;
+            --include-color: #3498db; 
+            --exclude-color: #e74c3c;
+            --bomb-selected-color: #2ecc71; 
+            --check-color: #2ecc71;
             --define-color: #9b59b6;
         }
         
         body.light-theme {
+            /* --- Light Theme --- */
             --bg-color: #f4f7f6;
-            --box-color: #ffffff; --input-bg-color: #ffffff;
-            --text-color: #333; --text-muted-color: #777; --header-color: #1a535c;
-            --primary-color: #1a535c; --secondary-color: #4ecdc4;
-            --history-bg: #333; --history-text: #fff;
-            --history-box-bg: #444;
-            --history-border: #555;
+            --box-color: #ffffff; 
+            --input-bg-color: #ffffff;
+            --text-color: #333; 
+            --text-muted-color: #555; 
+            --header-color: #1a535c;
+            --primary-color: #1a535c; 
+            --secondary-color: #00796b; /* Darker teal for contrast */
+            --history-bg: #e0e0e0; 
+            --history-text: #333;
+            --history-box-bg: #fff;
+            --history-border: #ccc;
+
+            /* Word Chip Colors (Light) - ADDED THIS TO FIX VISIBILITY */
+            --word-bg-color: #e0e0e0;
+            --word-text-color: #000000;
         }
         
         body.retro-theme {
+            /* --- Retro Theme --- */
             --bg-color: #000000;
-            --box-color: #0d0d0d; --input-bg-color: #222;
-            --text-color: #00FF00; --text-muted-color: #00FF00;
-            --header-color: #00FF00; --primary-color: #00FF00;
-            --secondary-color: #00FF00; --history-bg: #0a0a0a;
-            --history-box-bg: #1a1a1a; --history-border: #333;
-            --copied-color-start: #00e5ff; --copied-color-end: #84ffff;
-            --game-mode-color: #FFFF00; --reset-color: #FF0000;
-            --include-color: #0000FF; --exclude-color: #FF0000;
-            --bomb-selected-color: #00FF00; --check-color: #00FF00;
+            --box-color: #0d0d0d; 
+            --input-bg-color: #222;
+            --text-color: #00FF00; 
+            --text-muted-color: #00aa00;
+            --header-color: #00FF00; 
+            --primary-color: #00FF00;
+            --secondary-color: #00FF00; 
+            --history-bg: #0a0a0a;
+            --history-box-bg: #1a1a1a; 
+            --history-border: #333;
+            --copied-color-start: #00e5ff; 
+            --copied-color-end: #84ffff;
+            
+            /* Word Chip Colors (Retro) - ADDED THIS TO FIX VISIBILITY */
+            --word-bg-color: #003300;
+            --word-text-color: #00ff00;
+
+            --game-mode-color: #FFFF00; 
+            --reset-color: #FF0000;
+            --include-color: #0000FF; 
+            --exclude-color: #FF0000;
+            --bomb-selected-color: #00FF00; 
+            --check-color: #00FF00;
             font-family: 'Courier New', Courier, monospace;
         }
 
@@ -259,7 +298,8 @@
             align-items: center;
             justify-content: center;
             padding: 0.5rem 0.8rem; margin: 0.4rem;
-            background-color: var(--word-bg-color); color: var(--word-text-color);
+            background-color: var(--word-bg-color); 
+            color: var(--word-text-color);
             border-radius: 6px; cursor: pointer;
             transition: all 0.2s;
             vertical-align: top; position: relative;
