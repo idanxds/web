@@ -864,6 +864,9 @@
                         
                         <option value="wb-missing">Word Bomb Missing (English)</option>
                         
+                        <option value="german">German List (german_list.txt)</option>
+                        <option value="dutch">Dutch List (dutch_list.txt)</option>
+                        <option value="finnish">Finnish List (finnish_list.txt)</option>
                         
                         <hr>
                         <option value="bad">Bad / Explicit</option>
@@ -879,6 +882,7 @@
                         <option value="colors">Colors</option>
                         <option value="board-games">Board Games</option>
                         <option value="video-games">Video Games</option>
+                        <option value="minecraft">Minecraft</option>
                         <option value="foods">Foods</option>
                         <option value="cities">Cities</option>
                         <option value="diseases">Diseases</option>
@@ -1082,6 +1086,7 @@
             let dutchList = new Set();
             let finnishList = new Set();
             let existingSet = new Set(); // existing.txt words (normalized)
+            let minecraftSet = new Set(); // Minecraft words
             
             let brandsSet = new Set();
             let countriesSet = new Set(); 
@@ -1411,6 +1416,7 @@
                 await loadList('colors_list.txt', colorsSet);
                 await loadList('bgames_list.txt', boardGamesSet);
                 await loadList('vgames_list.txt', videoGamesSet);
+                await loadList('minecraft.txt', minecraftSet);
                 await loadList('foods_list.txt', foodsSet);
                 await loadList('diseases_list.txt', diseasesSet);
                 await loadList('religions_list.txt', religionsSet);
@@ -1625,6 +1631,7 @@
                     case 'colors': sourceList = Array.from(colorsSet); break;
                     case 'board-games': sourceList = Array.from(boardGamesSet); break;
                     case 'video-games': sourceList = Array.from(videoGamesSet); break;
+                    case 'minecraft': sourceList = Array.from(minecraftSet); break;
                     case 'foods': sourceList = Array.from(foodsSet); break;
                     case 'cities': sourceList = Array.from(citiesSet); break;
                     case 'diseases': sourceList = Array.from(diseasesSet); break;
@@ -1645,7 +1652,7 @@
                 if (uniqueFilterType === 'anagram') { queryCharMap = getCharMap(query); }
                 if (uniqueFilterType === 'include-all') { queryLetterSet = new Set(query.split('')); }
 
-                const specializedLists = ['countries', 'names', 'brands', 'bad', 'science', 'jobs', 'languages', 'phobias', 'animals', 'sports', 'colors', 'board-games', 'video-games', 'foods', 'cities', 'diseases', 'religions', 'palindromes'];
+                const specializedLists = ['countries', 'names', 'brands', 'bad', 'science', 'jobs', 'languages', 'phobias', 'animals', 'sports', 'colors', 'board-games', 'video-games', 'minecraft', 'foods', 'cities', 'diseases', 'religions', 'palindromes'];
                 const usePermanentFilters = !specializedLists.includes(uniqueFilterType);
 
                 for (const word of sourceList) {
