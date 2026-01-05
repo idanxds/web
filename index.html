@@ -26,11 +26,11 @@
             --copied-color-start: #84ffff; 
             --copied-color-end: #00e5ff;
             
-            /* IMPROVED WORD CHIP COLORS (Vibrant Teal Gradient) */
+            /* Vibrant Teal Gradient for Standard Words */
             --word-bg-color: #006064;
-            --word-bg-gradient: linear-gradient(135deg, #263238, #37474f);
+            --word-bg-gradient: linear-gradient(135deg, #2c3e50, #4ca1af);
             --word-text-color: #ffffff;
-            --word-border: 1px solid #455a64;
+            --word-border: 1px solid #607d8b;
             
             --game-mode-color: #ffc107; 
             --reset-color: #ff5252;
@@ -56,11 +56,11 @@
             --history-box-bg: #fff;
             --history-border: #ccc;
 
-            /* Light Theme Chips (Clean Blue-Grey) */
+            /* Light Theme Words */
             --word-bg-color: #e3f2fd;
-            --word-bg-gradient: linear-gradient(135deg, #e3f2fd, #bbdefb);
+            --word-bg-gradient: linear-gradient(135deg, #e3f2fd, #90caf9);
             --word-text-color: #0d47a1;
-            --word-border: 1px solid #90caf9;
+            --word-border: 1px solid #64b5f6;
         }
         
         body.retro-theme {
@@ -79,7 +79,7 @@
             --copied-color-start: #00e5ff; 
             --copied-color-end: #84ffff;
             
-            /* Retro Chips (Matrix style) */
+            /* Retro Words */
             --word-bg-color: #002200;
             --word-bg-gradient: none;
             --word-text-color: #00ff00;
@@ -298,7 +298,7 @@
             color: var(--text-muted-color);
         }
         
-        /* Word Item Styles - REFACTORED FOR VISIBILITY */
+        /* Word Item & Language Styles */
         .word-item {
             display: inline-flex;
             flex-direction: column;
@@ -307,7 +307,7 @@
             padding: 0.6rem 1rem; 
             margin: 0.4rem;
             
-            /* Apply new colors */
+            /* Gradient Backgrounds */
             background: var(--word-bg-gradient);
             background-color: var(--word-bg-color); /* Fallback */
             color: var(--word-text-color);
@@ -329,19 +329,26 @@
         
         /* --- SPECIAL MINECRAFT STYLE --- */
         .word-item.style-minecraft {
-            background: #5b8731 !important; /* Grass Green */
-            background-image: linear-gradient(to bottom, #74a33f 50%, #54371b 50%) !important; /* Grass top, Dirt bottom */
-            background-size: 100% 100%;
-            border: 2px solid #382209 !important; /* Dark Brown Border */
+            /* Grass Block Look */
+            background: #5b8731 !important;
+            background-image: linear-gradient(to bottom, #74a33f 50%, #54371b 50%) !important;
+            border: 3px solid #382209 !important;
             color: #ffffff !important;
-            font-family: 'VT323', 'Courier New', monospace !important;
-            font-size: 1.1rem !important;
+            font-family: 'VT323', monospace !important;
+            font-size: 1.2rem !important;
             text-shadow: 2px 2px 0px #000;
-            border-radius: 2px !important; /* Blocky */
+            border-radius: 0px !important; /* Fully Blocky */
             box-shadow: 4px 4px 0px rgba(0,0,0,0.3) !important;
+            padding: 0.5rem 1rem;
         }
         .word-item.style-minecraft:hover {
             transform: scale(1.05) !important;
+        }
+        /* Fix highlights inside minecraft blocks */
+        .style-minecraft .highlight {
+            color: #ffff55; /* Minecraft Yellow */
+            background: none;
+            text-shadow: 2px 2px 0px #3f3f3f;
         }
 
         /* Container to keep text horizontal */
@@ -409,12 +416,6 @@
             display: inline;
             background-color: rgba(255, 255, 0, 0.2);
             border-radius: 2px;
-        }
-        /* Override highlight color for Minecraft mode */
-        .style-minecraft .highlight {
-            color: #ffff00;
-            background: none;
-            text-shadow: 2px 2px 0 #000;
         }
         
         #word-tooltip {
@@ -1452,7 +1453,12 @@
                 await loadList('colors_list.txt', colorsSet);
                 await loadList('bgames_list.txt', boardGamesSet);
                 await loadList('vgames_list.txt', videoGamesSet);
+                
+                // --- MINECRAFT FALLBACK LIST ---
+                const minecraftDefaults = ["steve", "alex", "creeper", "zombie", "skeleton", "enderman", "spider", "villager", "witch", "slime", "ghast", "blaze", "wither", "ender dragon", "pig", "cow", "sheep", "chicken", "wolf", "ocelot", "horse", "donkey", "mule", "llama", "polar bear", "panda", "fox", "bee", "turtle", "dolphin", "squid", "cod", "salmon", "pufferfish", "tropical fish", "axolotl", "glow squid", "goat", "frog", "tadpole", "allay", "warden", "iron golem", "snow golem", "magma cube", "phantom", "ravager", "piglin", "hoglin", "zombified piglin", "strider", "diamond", "gold", "iron", "emerald", "redstone", "lapis lazuli", "coal", "netherite", "quartz", "obsidian", "bedrock", "dirt", "grass", "stone", "sand", "gravel", "clay", "wood", "planks", "crafting table", "furnace", "chest", "bed", "torch", "tnt"];
+                minecraftDefaults.forEach(w => minecraftSet.add(w));
                 await loadList('minecraft.txt', minecraftSet);
+                
                 await loadList('foods_list.txt', foodsSet);
                 await loadList('diseases_list.txt', diseasesSet);
                 await loadList('religions_list.txt', religionsSet);
@@ -1518,50 +1524,42 @@
             }
         }
 
-            // --- findWords (HEAVILY MODIFIED for Word-Bomb Multi-Lang) ---
+            // --- findWords (FIXED: RANKED FALLBACK SYSTEM) ---
             function findWords(query, uniqueFilterType, sortFilterType, lenFilter, wordsToExclude = []) {
                 const excludeSet = new Set(wordsToExclude);
-                let primaryCandidates = []; 
-                let fallbackCandidates = []; 
+                let candidates = [];
                 
                 // --- 1. Handle Word Bomb Missing Filter (Specific Case) ---
                 if (uniqueFilterType === 'wb-missing') {
                     let activeQuery = query.replace(/ /g, '-');
-                    const results = [];
                     for (const word of wordBombList) {
-                         // Strict clean for check
                          const cleanWord = cleanForExistingCheck(word);
                          
-                         // Check Filters
+                         // Excludes
                          if (excludeSet.has(word)) continue;
                          if (permanentExcludeList.length > 0 && permanentExcludeList.some(ex => cleanWord.includes(ex))) continue; 
                          
-                         // FIXED: Changed .every() to .some()
-                         if (permanentIncludeList.length > 0 && !permanentIncludeList.some(inc => cleanWord.includes(inc))) continue; 
-                         
-                         // CORE MISSING LOGIC
+                         // Missing Check
                          if (existingSet.has(cleanWord)) continue;
 
-                         if (activeQuery.length === 0 || word.includes(activeQuery)) {
-                             results.push({ word: word, lang: 'en' });
+                         // Prompt Match
+                         if (activeQuery.length > 0 && !word.includes(activeQuery)) continue;
+                         
+                         // SCORING (For Fallback)
+                         let score = 0;
+                         if (permanentIncludeList.length > 0) {
+                             permanentIncludeList.forEach((inc, index) => {
+                                 if (cleanWord.includes(inc)) {
+                                     // Higher score for matches earlier in the include list
+                                     score += Math.pow(10, permanentIncludeList.length - index);
+                                 }
+                             });
                          }
+                         candidates.push({ word: word, lang: 'en', score: score });
                     }
-                    
-                    if (lenFilter !== 'any' && lenFilter !== 'longest' && lenFilter !== 'shortest') {
-                         const length = parseInt(lenFilter, 10);
-                         return results.filter(item => item.word.length === length);
-                    }
-                    if (lenFilter === 'longest' || sortFilterType === 'longest') {
-                        results.sort((a, b) => b.word.length - a.word.length);
-                    } else if (lenFilter === 'shortest' || sortFilterType === 'shortest') {
-                        results.sort((a, b) => a.word.length - b.word.length);
-                    }
-                    
-                    return results;
                 }
-
                 // --- 2. Handle Word Bomb Multi-Lang Search ---
-                if (uniqueFilterType === 'word-bomb') {
+                else if (uniqueFilterType === 'word-bomb') {
                     let targetLang = 'en';
                     let activeQuery = query;
 
@@ -1575,196 +1573,175 @@
                     else if (query.toUpperCase().startsWith(':FI')) { targetLang = 'fi'; activeQuery = query.substring(3).trim(); }
 
                     activeQuery = activeQuery.replace(/ /g, '-');
-                    if (activeQuery.length === 0) return [];
-
+                    
                     const searchSet = (set, langCode) => {
-                        const results = [];
                         for (const word of set) {
                              if (excludeSet.has(word)) continue; 
                              if (permanentExcludeList.length > 0 && permanentExcludeList.some(ex => word.includes(ex))) continue; 
                              
-                             // FIXED: Changed .every() to .some()
-                             if (permanentIncludeList.length > 0 && !permanentIncludeList.some(inc => word.includes(inc))) continue; 
+                             if (activeQuery.length > 0 && !word.includes(activeQuery)) continue;
                              
-                             if (word.includes(activeQuery)) {
-                                 results.push({ word: word, lang: langCode });
+                             let score = 0;
+                             if (permanentIncludeList.length > 0) {
+                                 permanentIncludeList.forEach((inc, index) => {
+                                     if (word.includes(inc)) {
+                                         score += Math.pow(10, permanentIncludeList.length - index);
+                                     }
+                                 });
                              }
+                             candidates.push({ word: word, lang: langCode, score: score });
                         }
-                        
-                        if (lenFilter !== 'any' && lenFilter !== 'longest' && lenFilter !== 'shortest') {
-                             const length = parseInt(lenFilter, 10);
-                             return results.filter(item => item.word.length === length);
-                        }
-                        
-                        if (lenFilter === 'longest') {
-                            results.sort((a, b) => b.word.length - a.word.length);
-                        } else if (lenFilter === 'shortest') {
-                            results.sort((a, b) => a.word.length - b.word.length);
-                        } else if (sortFilterType === 'longest') {
-                             results.sort((a, b) => b.word.length - a.word.length);
-                        } else if (sortFilterType === 'shortest') {
-                             results.sort((a, b) => a.word.length - b.word.length);
-                        }
-                        
-                        return results;
                     };
                     
-                    const resultsEn = searchSet(wordBombList, 'en');
-                    const resultsFr = searchSet(frenchList, 'fr');
-                    const resultsSp = searchSet(spanishList, 'sp');
-                    const resultsPo = searchSet(portugueseList, 'po');
-                    const resultsIn = searchSet(indonesianList, 'in');
-                    const resultsGe = searchSet(germanList, 'ge');
-                    const resultsDu = searchSet(dutchList, 'du');
-                    const resultsFi = searchSet(finnishList, 'fi');
-
-                    const langOrder = ['en', 'fr', 'sp', 'po', 'in', 'ge', 'du', 'fi'];
-                    const targetIndex = langOrder.indexOf(targetLang);
-                    if (targetIndex > -1) {
-                        langOrder.splice(targetIndex, 1);
-                        langOrder.unshift(targetLang);
-                    }
-                    
-                    const resultArrays = {
-                        'en': resultsEn, 'fr': resultsFr, 'sp': resultsSp, 'po': resultsPo, 'in': resultsIn, 'ge': resultsGe, 'du': resultsDu, 'fi': resultsFi
-                    };
-                    
-                    let finalInterleaved = [];
-                    const maxLen = Math.max(resultsEn.length, resultsFr.length, resultsSp.length, resultsPo.length, resultsIn.length, resultsGe.length, resultsDu.length, resultsFi.length);
-                    
-                    for (let i = 0; i < maxLen; i += 10) {
-                        for (const langCode of langOrder) {
-                            const slice = resultArrays[langCode].slice(i, i + 10);
-                            if (slice.length > 0) {
-                                finalInterleaved.push(...slice);
-                            }
-                        }
-                    }
-                    
-                    return finalInterleaved; 
+                    searchSet(wordBombList, 'en');
+                    searchSet(frenchList, 'fr');
+                    searchSet(spanishList, 'sp');
+                    searchSet(portugueseList, 'po');
+                    searchSet(indonesianList, 'in');
+                    searchSet(germanList, 'ge');
+                    searchSet(dutchList, 'du');
+                    searchSet(finnishList, 'fi');
                 }
+                // --- 3. Standard Search Logic ---
+                else {
+                    let patternRegex = null;
+                    let queryCharMap = null;
+                    let queryLetterSet = null;
+                    let sourceList;
 
-                // --- 3. Standard Search Logic (Non-Word-Bomb) ---
-                let patternRegex = null;
-                let queryCharMap = null;
-                let queryLetterSet = null;
-                let sourceList;
-
-                switch (uniqueFilterType) {
-                    case 'german': sourceList = Array.from(germanList); break;
-                    case 'dutch': sourceList = Array.from(dutchList); break;
-                    case 'finnish': sourceList = Array.from(finnishList); break;
-                    case 'names': sourceList = Array.from(nameList); break;
-                    case 'brands': sourceList = Array.from(brandsSet); break;
-                    case 'countries': sourceList = Array.from(countriesSet); break;
-                    case 'bad': sourceList = Array.from(badSet); break;
-                    case 'science': sourceList = Array.from(scienceSet); break;
-                    case 'jobs': sourceList = Array.from(jobsSet); break;
-                    case 'languages': sourceList = Array.from(languagesSet); break;
-                    case 'phobias': sourceList = Array.from(phobiasMap.keys()); break;
-                    case 'animals': sourceList = Array.from(animalsSet); break;
-                    case 'sports': sourceList = Array.from(sportsSet); break;
-                    case 'colors': sourceList = Array.from(colorsSet); break;
-                    case 'board-games': sourceList = Array.from(boardGamesSet); break;
-                    case 'video-games': sourceList = Array.from(videoGamesSet); break;
-                    case 'minecraft': sourceList = Array.from(minecraftSet); break;
-                    case 'foods': sourceList = Array.from(foodsSet); break;
-                    case 'cities': sourceList = Array.from(citiesSet); break;
-                    case 'diseases': sourceList = Array.from(diseasesSet); break;
-                    case 'religions': sourceList = Array.from(religionsSet); break;
-                    case 'palindromes': sourceList = Array.from(palindromesSet); break;
-                    default: sourceList = allCleanWords; break;
-                }
-                
-                if (uniqueFilterType === 'pattern') {
-                    try { patternRegex = new RegExp(query.replace(/_/g, '.'), 'i'); } catch (e) { return []; }
-                }
-                if (uniqueFilterType === 'v-c-pattern') {
-                    try {
-                        const pattern = query.replace(/v/gi, '[aeiouy]').replace(/c/gi, '[bcdfghjklmnpqrstvwxyz]');
-                        patternRegex = new RegExp(`^${pattern}$`);
-                    } catch (e) { return []; }
-                }
-                if (uniqueFilterType === 'anagram') { queryCharMap = getCharMap(query); }
-                if (uniqueFilterType === 'include-all') { queryLetterSet = new Set(query.split('')); }
-
-                // FIXED: Removed 'minecraft' from this list to ENABLE filtering for it.
-                const specializedLists = ['countries', 'names', 'brands', 'bad', 'science', 'jobs', 'languages', 'phobias', 'animals', 'sports', 'colors', 'board-games', 'video-games', 'foods', 'cities', 'diseases', 'religions', 'palindromes'];
-                const usePermanentFilters = !specializedLists.includes(uniqueFilterType);
-
-                for (const word of sourceList) {
-                    if (excludeSet.has(word)) continue;
-                    let matchesBase = false;
                     switch (uniqueFilterType) {
-                        case 'pattern':
-                        case 'v-c-pattern': matchesBase = patternRegex.test(word); break;
-                        case 'anagram':
-                            const wordCharMap = getCharMap(word);
-                            matchesBase = true;
-                            for (const char in wordCharMap) {
-                                if (!queryCharMap[char] || wordCharMap[char] > queryCharMap[char]) { matchesBase = false; break; }
-                            }
-                            break;
-                        case 'include-all':
-                            if (queryLetterSet) matchesBase = [...queryLetterSet].every(letter => word.includes(letter));
-                            break;
-                        default: 
-                            if(sortFilterType === 'starting') matchesBase = word.startsWith(query);
-                            else if (sortFilterType === 'ending') matchesBase = word.endsWith(query);
-                            else matchesBase = (query.length === 0) ? true : word.includes(query);
-                            break;
+                        case 'german': sourceList = Array.from(germanList); break;
+                        case 'dutch': sourceList = Array.from(dutchList); break;
+                        case 'finnish': sourceList = Array.from(finnishList); break;
+                        case 'names': sourceList = Array.from(nameList); break;
+                        case 'brands': sourceList = Array.from(brandsSet); break;
+                        case 'countries': sourceList = Array.from(countriesSet); break;
+                        case 'bad': sourceList = Array.from(badSet); break;
+                        case 'science': sourceList = Array.from(scienceSet); break;
+                        case 'jobs': sourceList = Array.from(jobsSet); break;
+                        case 'languages': sourceList = Array.from(languagesSet); break;
+                        case 'phobias': sourceList = Array.from(phobiasMap.keys()); break;
+                        case 'animals': sourceList = Array.from(animalsSet); break;
+                        case 'sports': sourceList = Array.from(sportsSet); break;
+                        case 'colors': sourceList = Array.from(colorsSet); break;
+                        case 'board-games': sourceList = Array.from(boardGamesSet); break;
+                        case 'video-games': sourceList = Array.from(videoGamesSet); break;
+                        case 'minecraft': sourceList = Array.from(minecraftSet); break;
+                        case 'foods': sourceList = Array.from(foodsSet); break;
+                        case 'cities': sourceList = Array.from(citiesSet); break;
+                        case 'diseases': sourceList = Array.from(diseasesSet); break;
+                        case 'religions': sourceList = Array.from(religionsSet); break;
+                        case 'palindromes': sourceList = Array.from(palindromesSet); break;
+                        default: sourceList = allCleanWords; break;
                     }
+                    
+                    if (uniqueFilterType === 'pattern') {
+                        try { patternRegex = new RegExp(query.replace(/_/g, '.'), 'i'); } catch (e) { return []; }
+                    }
+                    if (uniqueFilterType === 'v-c-pattern') {
+                        try {
+                            const pattern = query.replace(/v/gi, '[aeiouy]').replace(/c/gi, '[bcdfghjklmnpqrstvwxyz]');
+                            patternRegex = new RegExp(`^${pattern}$`);
+                        } catch (e) { return []; }
+                    }
+                    if (uniqueFilterType === 'anagram') { queryCharMap = getCharMap(query); }
+                    if (uniqueFilterType === 'include-all') { queryLetterSet = new Set(query.split('')); }
 
-                    if (matchesBase) {
-                        let passesPermanent = true;
-                        if (usePermanentFilters) {
-                            if (permanentExcludeList.length > 0 && permanentExcludeList.some(ex => word.includes(ex))) passesPermanent = false;
-                            
-                            // FIXED: Changed .every() to .some() to match ANY filter
-                            if (passesPermanent && permanentIncludeList.length > 0 && !permanentIncludeList.some(inc => word.includes(inc))) passesPermanent = false;
+                    const specializedLists = ['countries', 'names', 'brands', 'bad', 'science', 'jobs', 'languages', 'phobias', 'animals', 'sports', 'colors', 'board-games', 'video-games', 'minecraft', 'foods', 'cities', 'diseases', 'religions', 'palindromes'];
+                    const usePermanentFilters = !specializedLists.includes(uniqueFilterType);
+
+                    for (const word of sourceList) {
+                        if (excludeSet.has(word)) continue;
+                        if (usePermanentFilters && permanentExcludeList.length > 0 && permanentExcludeList.some(ex => word.includes(ex))) continue;
+
+                        let matchesBase = false;
+                        switch (uniqueFilterType) {
+                            case 'pattern':
+                            case 'v-c-pattern': matchesBase = patternRegex.test(word); break;
+                            case 'anagram':
+                                const wordCharMap = getCharMap(word);
+                                matchesBase = true;
+                                for (const char in wordCharMap) {
+                                    if (!queryCharMap[char] || wordCharMap[char] > queryCharMap[char]) { matchesBase = false; break; }
+                                }
+                                break;
+                            case 'include-all':
+                                if (queryLetterSet) matchesBase = [...queryLetterSet].every(letter => word.includes(letter));
+                                break;
+                            default: 
+                                if(sortFilterType === 'starting') matchesBase = word.startsWith(query);
+                                else if (sortFilterType === 'ending') matchesBase = word.endsWith(query);
+                                else matchesBase = (query.length === 0) ? true : word.includes(query);
+                                break;
                         }
 
-                        if (passesPermanent) primaryCandidates.push(word);
-                        else fallbackCandidates.push(word);
+                        if (matchesBase) {
+                            let score = 0;
+                            // SCORING LOGIC FOR FALLBACK
+                            if (usePermanentFilters && permanentIncludeList.length > 0) {
+                                permanentIncludeList.forEach((inc, index) => {
+                                    if (word.includes(inc)) {
+                                        score += Math.pow(10, permanentIncludeList.length - index);
+                                    }
+                                });
+                            }
+                            candidates.push({ word: word, lang: 'default', score: score });
+                        }
                     }
                 }
                 
-                // Helper for standard list processing
-                const processStandard = (list) => {
-                    let result = list;
-                    
-                    if (lenFilter !== 'any' && lenFilter !== 'longest' && lenFilter !== 'shortest') {
-                        const length = parseInt(lenFilter, 10);
-                        result = result.filter(w => w.length === length);
-                    }
-                    
-                    if (sortFilterType === 'common' || sortFilterType === 'least-common') {
-                        const candidatesWithFreq = result.filter(w => wordFrequencyMap.has(w));
-                        if (candidatesWithFreq.length > 0) {
-                            if (sortFilterType === 'common') {
-                                candidatesWithFreq.sort((a, b) => (wordFrequencyMap.get(b) || 0) - (wordFrequencyMap.get(a) || 0));
-                                const best = wordFrequencyMap.get(candidatesWithFreq[0]);
-                                result = candidatesWithFreq.filter(w => wordFrequencyMap.get(w) === best);
-                            } else {
-                                candidatesWithFreq.sort((a, b) => (wordFrequencyMap.get(a) || 0) - (wordFrequencyMap.get(b) || 0));
-                                const best = wordFrequencyMap.get(candidatesWithFreq[0]);
-                                result = candidatesWithFreq.filter(w => wordFrequencyMap.get(w) === best);
-                            }
-                        }
-                    }
-                    
-                    if (lenFilter === 'longest') result.sort((a, b) => b.length - a.length);
-                    if (lenFilter === 'shortest') result.sort((a, b) => a.length - b.length);
-                    
-                    if (sortFilterType === 'none' && lenFilter === 'any') shuffleArray(result);
-                    
-                    return result;
-                };
-
-                let final = processStandard(primaryCandidates);
-                if (final.length === 0 && fallbackCandidates.length > 0) final = processStandard(fallbackCandidates);
+                // --- Filter by Length ---
+                if (lenFilter !== 'any' && lenFilter !== 'longest' && lenFilter !== 'shortest') {
+                    const length = parseInt(lenFilter, 10);
+                    candidates = candidates.filter(item => item.word.length === length);
+                }
                 
-                return final.map(w => ({ word: w, lang: 'default' }));
+                // --- SORTING (Score Descending acts as Fallback) ---
+                // Primary Sort: Score (Highest First)
+                // Secondary Sort: User Selection
+                candidates.sort((a, b) => {
+                    if (b.score !== a.score) return b.score - a.score;
+                    
+                    // Tie-breakers based on sort filter
+                    if (sortFilterType === 'longest' || lenFilter === 'longest') return b.word.length - a.word.length;
+                    if (sortFilterType === 'shortest' || lenFilter === 'shortest') return a.word.length - b.word.length;
+                    if (sortFilterType === 'common') {
+                        return (wordFrequencyMap.get(b.word) || 0) - (wordFrequencyMap.get(a.word) || 0);
+                    }
+                    if (sortFilterType === 'least-common') {
+                        return (wordFrequencyMap.get(a.word) || 0) - (wordFrequencyMap.get(b.word) || 0);
+                    }
+                    return 0; // Maintain rough order
+                });
+                
+                // --- Randomize on Enter ---
+                if (sortFilterType === 'none' && lenFilter === 'any') {
+                    // Only shuffle items with same score groups to keep fallback logic, 
+                    // OR shuffle everything if score doesn't matter much.
+                    // Request: "Random words every time". 
+                    // Implementation: If NO score (fallback only) or ALL scores equal, shuffle.
+                    // Better approach: Shuffle the top candidates that have the best score.
+                    // Simple approach for "Any Length": Shuffle the whole list if scores are 0 (fallback).
+                    // If scores exist, we probably want to see the scored ones first. 
+                    // Let's shuffle within score groups.
+                    
+                    // Group by score
+                    const groups = {};
+                    candidates.forEach(c => {
+                        if(!groups[c.score]) groups[c.score] = [];
+                        groups[c.score].push(c);
+                    });
+                    
+                    let sortedKeys = Object.keys(groups).sort((a,b) => b - a); // Descending scores
+                    let randomized = [];
+                    sortedKeys.forEach(k => {
+                        shuffleArray(groups[k]);
+                        randomized.push(...groups[k]);
+                    });
+                    candidates = randomized;
+                }
+
+                return candidates;
             }
             
             function copyToClipboard(formattedWord, originalWord, element, query = "") {
