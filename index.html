@@ -366,16 +366,27 @@
             letter-spacing: 0.5px;
         }
         
-        /* Language Glows - Subtle borders */
-        .lang-en { border-bottom: 2px solid rgba(255, 0, 0, 0.5); }
-        .lang-fr { border-bottom: 2px solid rgba(0, 80, 255, 0.5); }
-        .lang-sp { border-bottom: 2px solid rgba(255, 204, 0, 0.5); }
-        .lang-po { border-bottom: 2px solid rgba(0, 156, 59, 0.5); }
-        .lang-in { border-bottom: 2px solid rgba(255, 0, 0, 0.5); }
-        .lang-ge { border-bottom: 2px solid rgba(255, 215, 0, 0.5); }
-        .lang-du { border-bottom: 2px solid rgba(0, 0, 255, 0.5); }
-        .lang-fi { border-bottom: 2px solid rgba(255, 255, 255, 0.8); }
-        /* Minecraft has its own style, no extra border needed */
+        /* Language Separator Line - NEW VISUALS */
+        .lang-separator {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 20px 0 10px 0;
+            color: var(--text-muted-color);
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-weight: bold;
+            position: relative;
+        }
+        .lang-separator::before, .lang-separator::after {
+            content: "";
+            flex-grow: 1;
+            height: 1px;
+            background: var(--history-border);
+            margin: 0 15px;
+        }
 
         .word-item.copied {
             background: linear-gradient(135deg, var(--copied-color-start), var(--copied-color-end)) !important;
@@ -1659,6 +1670,7 @@
                         if (singleLangMode === 'mc') {
                              searchSet(minecraftSet, 'mc');
                         } else {
+                            // Order: En, Fr, Sp, Po, In, Ge, Du, Fi, Mc (Sequential, not interleaved)
                             searchSet(wordBombList, 'en');
                             searchSet(frenchList, 'fr');
                             searchSet(spanishList, 'sp');
@@ -1667,7 +1679,7 @@
                             searchSet(germanList, 'ge');
                             searchSet(dutchList, 'du');
                             searchSet(finnishList, 'fi');
-                            searchSet(minecraftSet, 'mc'); // Add Minecraft to All
+                            searchSet(minecraftSet, 'mc'); 
                         }
                     }
                 }
@@ -1897,9 +1909,20 @@
                 summary.textContent = `Showing ${wordsToDisplay.length} of ${totalMatches} matching words.`;
                 fragment.appendChild(summary);
 
+                let previousLang = null;
+
                 for (const item of wordsToDisplay) {
                     const originalWord = item.word;
                     const lang = item.lang;
+                    
+                    // Insert Separator if language changes
+                    if (previousLang !== null && lang !== previousLang) {
+                        const sep = document.createElement('div');
+                        sep.className = 'lang-separator';
+                        sep.innerText = getLangName(lang);
+                        fragment.appendChild(sep);
+                    }
+                    previousLang = lang;
                     
                     const wordElement = document.createElement('span');
                     const formattedWord = applyCapping(originalWord, capMode);
@@ -1916,7 +1939,7 @@
                     // Add Lang Label
                     let langLabel = '';
                     if (lang !== 'default') {
-                        langLabel = `<div class="word-lang-label">${getLangName(lang)}</div>`;
+                        // langLabel = `<div class="word-lang-label">${getLangName(lang)}</div>`;
                     }
                     
                     // FIXED: Using word-content-row for horizontal layout
