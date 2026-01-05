@@ -191,7 +191,7 @@
             font-weight: 600;
             color: var(--text-muted-color);
         }
-        #search-filter, #cap-filter, #length-filter, #unique-filter {
+        #search-filter, #cap-filter, #length-filter, #unique-filter, #wb-lang-select {
             font-family: 'Inter', sans-serif;
             font-size: 1rem; padding: 0.5rem; border: 1px solid var(--history-border);
             border-radius: 8px; background-color: var(--input-bg-color);
@@ -366,24 +366,16 @@
             letter-spacing: 0.5px;
         }
         
-        /* Language Separator Line */
-        .lang-separator {
-            width: 100%;
-            height: 1px;
-            background: linear-gradient(90deg, transparent, var(--history-border), transparent);
-            margin: 15px 0;
-            display: block;
-        }
-        
-        /* Language Glows */
-        .lang-en { border-color: rgba(255, 0, 0, 0.5); }
-        .lang-fr { border-color: rgba(0, 80, 255, 0.5); }
-        .lang-sp { border-color: rgba(255, 204, 0, 0.5); }
-        .lang-po { border-color: rgba(0, 156, 59, 0.5); }
-        .lang-in { border-color: rgba(255, 0, 0, 0.5); }
-        .lang-ge { border-color: rgba(255, 215, 0, 0.5); }
-        .lang-du { border-color: rgba(0, 0, 255, 0.5); }
-        .lang-fi { border-color: rgba(255, 255, 255, 0.8); }
+        /* Language Glows - Subtle borders */
+        .lang-en { border-bottom: 2px solid rgba(255, 0, 0, 0.5); }
+        .lang-fr { border-bottom: 2px solid rgba(0, 80, 255, 0.5); }
+        .lang-sp { border-bottom: 2px solid rgba(255, 204, 0, 0.5); }
+        .lang-po { border-bottom: 2px solid rgba(0, 156, 59, 0.5); }
+        .lang-in { border-bottom: 2px solid rgba(255, 0, 0, 0.5); }
+        .lang-ge { border-bottom: 2px solid rgba(255, 215, 0, 0.5); }
+        .lang-du { border-bottom: 2px solid rgba(0, 0, 255, 0.5); }
+        .lang-fi { border-bottom: 2px solid rgba(255, 255, 255, 0.8); }
+        /* Minecraft has its own style, no extra border needed */
 
         .word-item.copied {
             background: linear-gradient(135deg, var(--copied-color-start), var(--copied-color-end)) !important;
@@ -889,6 +881,22 @@
         <div class="card" id="filter-grid-card">
             <div id="filter-grid">
                 <div class="filter-group">
+                    <label for="wb-lang-select">Word Bomb Languages:</label>
+                    <select id="wb-lang-select">
+                        <option value="all">All (Mixed)</option>
+                        <option value="en">English</option>
+                        <option value="fr">French</option>
+                        <option value="sp">Spanish</option>
+                        <option value="po">Portuguese</option>
+                        <option value="in">Indonesian</option>
+                        <option value="ge">German</option>
+                        <option value="du">Dutch</option>
+                        <option value="fi">Finnish</option>
+                        <option value="mc">Minecraft</option>
+                    </select>
+                </div>
+
+                <div class="filter-group">
                     <label for="unique-filter">Unique Filter:</label>
                     <select id="unique-filter">
                         <option value="none" selected>Standard Search</option>
@@ -897,13 +905,13 @@
                         <option value="anagram">Anagram</option>
                         <option value="include-all">Include All Letters</option>
                         
-                        <option value="word-bomb">Word-Bomb List (Multi-Lang)</option>
+                        <option value="word-bomb">Word-Bomb List</option>
                         
                         <option value="wb-missing">Word Bomb Missing (English)</option>
                         
-                        <option value="german">German List (german_list.txt)</option>
-                        <option value="dutch">Dutch List (dutch_list.txt)</option>
-                        <option value="finnish">Finnish List (finnish_list.txt)</option>
+                        <option value="german">German List</option>
+                        <option value="dutch">Dutch List</option>
+                        <option value="finnish">Finnish List</option>
                         
                         <hr>
                         <option value="bad">Bad / Explicit</option>
@@ -1032,6 +1040,8 @@
             const capFilter = document.getElementById('cap-filter');
             const lengthFilter = document.getElementById('length-filter');
             const uniqueFilter = document.getElementById('unique-filter');
+            const wbLangSelect = document.getElementById('wb-lang-select');
+            
             const resultsContainer = document.getElementById('results-container');
             const loadingMessage = document.getElementById('loading-message');
             const resetButton = document.getElementById('reset-button');
@@ -1529,8 +1539,22 @@
                 const excludeSet = new Set(wordsToExclude);
                 let candidates = [];
                 
+                // --- Determine actual filter based on Dropdown + WB Select ---
+                let activeFilterType = uniqueFilterType;
+                let singleLangMode = null;
+                
+                // If the new WB Language dropdown is used (not "all"), override logic
+                const wbLang = wbLangSelect.value;
+                if (uniqueFilterType === 'word-bomb' && wbLang !== 'all') {
+                    // Map selection to a temporary single-lang mode
+                    if (wbLang === 'mc') activeFilterType = 'minecraft'; // Direct override
+                    else {
+                        singleLangMode = wbLang; // Use word-bomb logic but filtered
+                    }
+                }
+
                 // --- 1. Handle Word Bomb Missing Filter (Specific Case) ---
-                if (uniqueFilterType === 'wb-missing') {
+                if (activeFilterType === 'wb-missing') {
                     let activeQuery = query.replace(/ /g, '-');
                     for (const word of wordBombList) {
                          const cleanWord = cleanForExistingCheck(word);
@@ -1542,8 +1566,13 @@
                          // Missing Check
                          if (existingSet.has(cleanWord)) continue;
 
-                         // Prompt Match
-                         if (activeQuery.length > 0 && !word.includes(activeQuery)) continue;
+                         // Prompt Match (Supports Starts/Ends/Includes)
+                         let matchesPrompt = false;
+                         if (sortFilterType === 'starting') matchesPrompt = word.startsWith(activeQuery);
+                         else if (sortFilterType === 'ending') matchesPrompt = word.endsWith(activeQuery);
+                         else matchesPrompt = (activeQuery.length === 0 || word.includes(activeQuery));
+                         
+                         if (!matchesPrompt) continue;
                          
                          // SCORING (For Fallback)
                          let score = 0;
@@ -1559,48 +1588,88 @@
                     }
                 }
                 // --- 2. Handle Word Bomb Multi-Lang Search ---
-                else if (uniqueFilterType === 'word-bomb') {
+                else if (activeFilterType === 'word-bomb') {
                     let targetLang = 'en';
                     let activeQuery = query;
 
-                    if (query.toUpperCase().startsWith(':FR')) { targetLang = 'fr'; activeQuery = query.substring(3).trim(); }
-                    else if (query.toUpperCase().startsWith(':EN')) { targetLang = 'en'; activeQuery = query.substring(3).trim(); }
-                    else if (query.toUpperCase().startsWith(':SP')) { targetLang = 'sp'; activeQuery = query.substring(3).trim(); }
-                    else if (query.toUpperCase().startsWith(':PO')) { targetLang = 'po'; activeQuery = query.substring(3).trim(); }
-                    else if (query.toUpperCase().startsWith(':IN')) { targetLang = 'in'; activeQuery = query.substring(3).trim(); }
-                    else if (query.toUpperCase().startsWith(':GE') || query.toUpperCase().startsWith(':DE')) { targetLang = 'ge'; activeQuery = query.substring(3).trim(); }
-                    else if (query.toUpperCase().startsWith(':DU')) { targetLang = 'du'; activeQuery = query.substring(3).trim(); }
-                    else if (query.toUpperCase().startsWith(':FI')) { targetLang = 'fi'; activeQuery = query.substring(3).trim(); }
-
-                    activeQuery = activeQuery.replace(/ /g, '-');
-                    
-                    const searchSet = (set, langCode) => {
-                        for (const word of set) {
-                             if (excludeSet.has(word)) continue; 
-                             if (permanentExcludeList.length > 0 && permanentExcludeList.some(ex => word.includes(ex))) continue; 
+                    // Manual overrides still work if typed
+                    if (query.toUpperCase().startsWith(':MC') || query.toUpperCase().startsWith(':MI')) { 
+                        // Redirect to Minecraft logic immediately if typed
+                        // This requires us to jump to the standard logic block for minecraft
+                        // But since we are inside this block, we can just fetch from minecraftSet manually
+                        activeQuery = query.substring(3).trim();
+                        for (const word of minecraftSet) {
+                             if (excludeSet.has(word)) continue;
+                             if (permanentExcludeList.length > 0 && permanentExcludeList.some(ex => word.includes(ex))) continue;
+                             let matches = false;
+                             if (sortFilterType === 'starting') matches = word.startsWith(activeQuery);
+                             else if (sortFilterType === 'ending') matches = word.endsWith(activeQuery);
+                             else matches = word.includes(activeQuery);
                              
-                             if (activeQuery.length > 0 && !word.includes(activeQuery)) continue;
-                             
-                             let score = 0;
-                             if (permanentIncludeList.length > 0) {
-                                 permanentIncludeList.forEach((inc, index) => {
-                                     if (word.includes(inc)) {
-                                         score += Math.pow(10, permanentIncludeList.length - index);
-                                     }
-                                 });
+                             if(matches) {
+                                 let score = 0;
+                                 if (permanentIncludeList.length > 0) {
+                                     permanentIncludeList.forEach((inc, idx) => { if(word.includes(inc)) score += Math.pow(10, permanentIncludeList.length - idx); });
+                                 }
+                                 candidates.push({ word: word, lang: 'mc', score: score });
                              }
-                             candidates.push({ word: word, lang: langCode, score: score });
                         }
-                    };
-                    
-                    searchSet(wordBombList, 'en');
-                    searchSet(frenchList, 'fr');
-                    searchSet(spanishList, 'sp');
-                    searchSet(portugueseList, 'po');
-                    searchSet(indonesianList, 'in');
-                    searchSet(germanList, 'ge');
-                    searchSet(dutchList, 'du');
-                    searchSet(finnishList, 'fi');
+                        // Skip rest of multi-lang
+                    } else {
+                        // Standard WB Logic
+                        if (query.toUpperCase().startsWith(':FR')) { targetLang = 'fr'; activeQuery = query.substring(3).trim(); }
+                        else if (query.toUpperCase().startsWith(':EN')) { targetLang = 'en'; activeQuery = query.substring(3).trim(); }
+                        else if (query.toUpperCase().startsWith(':SP')) { targetLang = 'sp'; activeQuery = query.substring(3).trim(); }
+                        else if (query.toUpperCase().startsWith(':PO')) { targetLang = 'po'; activeQuery = query.substring(3).trim(); }
+                        else if (query.toUpperCase().startsWith(':IN')) { targetLang = 'in'; activeQuery = query.substring(3).trim(); }
+                        else if (query.toUpperCase().startsWith(':GE') || query.toUpperCase().startsWith(':DE')) { targetLang = 'ge'; activeQuery = query.substring(3).trim(); }
+                        else if (query.toUpperCase().startsWith(':DU')) { targetLang = 'du'; activeQuery = query.substring(3).trim(); }
+                        else if (query.toUpperCase().startsWith(':FI')) { targetLang = 'fi'; activeQuery = query.substring(3).trim(); }
+
+                        activeQuery = activeQuery.replace(/ /g, '-');
+                        
+                        const searchSet = (set, langCode) => {
+                            // If Single Lang Mode is active and doesn't match, skip
+                            if (singleLangMode && singleLangMode !== langCode) return;
+                            
+                            for (const word of set) {
+                                 if (excludeSet.has(word)) continue; 
+                                 if (permanentExcludeList.length > 0 && permanentExcludeList.some(ex => word.includes(ex))) continue; 
+                                 
+                                 let matchesPrompt = false;
+                                 if (sortFilterType === 'starting') matchesPrompt = word.startsWith(activeQuery);
+                                 else if (sortFilterType === 'ending') matchesPrompt = word.endsWith(activeQuery);
+                                 else matchesPrompt = (activeQuery.length === 0 || word.includes(activeQuery));
+                                 
+                                 if (!matchesPrompt) continue;
+                                 
+                                 let score = 0;
+                                 if (permanentIncludeList.length > 0) {
+                                     permanentIncludeList.forEach((inc, index) => {
+                                         if (word.includes(inc)) {
+                                             score += Math.pow(10, permanentIncludeList.length - index);
+                                         }
+                                     });
+                                 }
+                                 candidates.push({ word: word, lang: langCode, score: score });
+                            }
+                        };
+                        
+                        // Check if Minecraft selected via dropdown in WB mode
+                        if (singleLangMode === 'mc') {
+                             searchSet(minecraftSet, 'mc');
+                        } else {
+                            searchSet(wordBombList, 'en');
+                            searchSet(frenchList, 'fr');
+                            searchSet(spanishList, 'sp');
+                            searchSet(portugueseList, 'po');
+                            searchSet(indonesianList, 'in');
+                            searchSet(germanList, 'ge');
+                            searchSet(dutchList, 'du');
+                            searchSet(finnishList, 'fi');
+                            searchSet(minecraftSet, 'mc'); // Add Minecraft to All
+                        }
+                    }
                 }
                 // --- 3. Standard Search Logic ---
                 else {
@@ -1609,7 +1678,7 @@
                     let queryLetterSet = null;
                     let sourceList;
 
-                    switch (uniqueFilterType) {
+                    switch (activeFilterType) {
                         case 'german': sourceList = Array.from(germanList); break;
                         case 'dutch': sourceList = Array.from(dutchList); break;
                         case 'finnish': sourceList = Array.from(finnishList); break;
@@ -1635,27 +1704,27 @@
                         default: sourceList = allCleanWords; break;
                     }
                     
-                    if (uniqueFilterType === 'pattern') {
+                    if (activeFilterType === 'pattern') {
                         try { patternRegex = new RegExp(query.replace(/_/g, '.'), 'i'); } catch (e) { return []; }
                     }
-                    if (uniqueFilterType === 'v-c-pattern') {
+                    if (activeFilterType === 'v-c-pattern') {
                         try {
                             const pattern = query.replace(/v/gi, '[aeiouy]').replace(/c/gi, '[bcdfghjklmnpqrstvwxyz]');
                             patternRegex = new RegExp(`^${pattern}$`);
                         } catch (e) { return []; }
                     }
-                    if (uniqueFilterType === 'anagram') { queryCharMap = getCharMap(query); }
-                    if (uniqueFilterType === 'include-all') { queryLetterSet = new Set(query.split('')); }
+                    if (activeFilterType === 'anagram') { queryCharMap = getCharMap(query); }
+                    if (activeFilterType === 'include-all') { queryLetterSet = new Set(query.split('')); }
 
                     const specializedLists = ['countries', 'names', 'brands', 'bad', 'science', 'jobs', 'languages', 'phobias', 'animals', 'sports', 'colors', 'board-games', 'video-games', 'minecraft', 'foods', 'cities', 'diseases', 'religions', 'palindromes'];
-                    const usePermanentFilters = !specializedLists.includes(uniqueFilterType);
+                    const usePermanentFilters = !specializedLists.includes(activeFilterType) || activeFilterType === 'minecraft'; // ENABLE FOR MINECRAFT
 
                     for (const word of sourceList) {
                         if (excludeSet.has(word)) continue;
                         if (usePermanentFilters && permanentExcludeList.length > 0 && permanentExcludeList.some(ex => word.includes(ex))) continue;
 
                         let matchesBase = false;
-                        switch (uniqueFilterType) {
+                        switch (activeFilterType) {
                             case 'pattern':
                             case 'v-c-pattern': matchesBase = patternRegex.test(word); break;
                             case 'anagram':
@@ -1685,7 +1754,7 @@
                                     }
                                 });
                             }
-                            candidates.push({ word: word, lang: 'default', score: score });
+                            candidates.push({ word: word, lang: (activeFilterType === 'minecraft' ? 'mc' : 'default'), score: score });
                         }
                     }
                 }
@@ -1716,16 +1785,7 @@
                 
                 // --- Randomize on Enter ---
                 if (sortFilterType === 'none' && lenFilter === 'any') {
-                    // Only shuffle items with same score groups to keep fallback logic, 
-                    // OR shuffle everything if score doesn't matter much.
-                    // Request: "Random words every time". 
-                    // Implementation: If NO score (fallback only) or ALL scores equal, shuffle.
-                    // Better approach: Shuffle the top candidates that have the best score.
-                    // Simple approach for "Any Length": Shuffle the whole list if scores are 0 (fallback).
-                    // If scores exist, we probably want to see the scored ones first. 
-                    // Let's shuffle within score groups.
-                    
-                    // Group by score
+                    // Group by score so high-value matches stay on top, but randomized within group
                     const groups = {};
                     candidates.forEach(c => {
                         if(!groups[c.score]) groups[c.score] = [];
@@ -1837,19 +1897,9 @@
                 summary.textContent = `Showing ${wordsToDisplay.length} of ${totalMatches} matching words.`;
                 fragment.appendChild(summary);
 
-                let previousLang = null;
-
                 for (const item of wordsToDisplay) {
                     const originalWord = item.word;
                     const lang = item.lang;
-                    
-                    // Insert Separator if language changes
-                    if (previousLang !== null && lang !== previousLang) {
-                        const sep = document.createElement('div');
-                        sep.className = 'lang-separator';
-                        fragment.appendChild(sep);
-                    }
-                    previousLang = lang;
                     
                     const wordElement = document.createElement('span');
                     const formattedWord = applyCapping(originalWord, capMode);
@@ -1874,7 +1924,7 @@
                     wordElement.className = `word-item lang-${lang}`;
                     
                     // APPLY MINECRAFT STYLE IF SELECTED
-                    if (uniqueFilterType === 'minecraft') {
+                    if (uniqueFilterType === 'minecraft' || lang === 'mc') {
                         wordElement.classList.add('style-minecraft');
                     }
                     
@@ -1901,6 +1951,7 @@
                     case 'ge': return 'German';
                     case 'du': return 'Dutch';
                     case 'fi': return 'Finnish';
+                    case 'mc': return 'Minecraft';
                     default: return '';
                 }
             }
