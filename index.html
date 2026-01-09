@@ -366,7 +366,7 @@
             letter-spacing: 0.5px;
         }
         
-        /* Language Separator Line - NEW VISUALS */
+        /* Language Separator Line */
         .lang-separator {
             width: 100%;
             display: flex;
@@ -387,6 +387,16 @@
             background: var(--history-border);
             margin: 0 15px;
         }
+        
+        /* Language Glows - Subtle borders */
+        .lang-en { border-bottom: 2px solid rgba(255, 0, 0, 0.5); }
+        .lang-fr { border-bottom: 2px solid rgba(0, 80, 255, 0.5); }
+        .lang-sp { border-bottom: 2px solid rgba(255, 204, 0, 0.5); }
+        .lang-po { border-bottom: 2px solid rgba(0, 156, 59, 0.5); }
+        .lang-in { border-bottom: 2px solid rgba(255, 0, 0, 0.5); }
+        .lang-ge { border-bottom: 2px solid rgba(255, 215, 0, 0.5); }
+        .lang-du { border-bottom: 2px solid rgba(0, 0, 255, 0.5); }
+        .lang-fi { border-bottom: 2px solid rgba(255, 255, 255, 0.8); }
 
         .word-item.copied {
             background: linear-gradient(135deg, var(--copied-color-start), var(--copied-color-end)) !important;
@@ -1567,35 +1577,48 @@
                 // --- 1. Handle Word Bomb Missing Filter (Specific Case) ---
                 if (activeFilterType === 'wb-missing') {
                     let activeQuery = query.replace(/ /g, '-');
-                    for (const word of wordBombList) {
-                         const cleanWord = cleanForExistingCheck(word);
-                         
-                         // Excludes
-                         if (excludeSet.has(word)) continue;
-                         if (permanentExcludeList.length > 0 && permanentExcludeList.some(ex => cleanWord.includes(ex))) continue; 
-                         
-                         // Missing Check
-                         if (existingSet.has(cleanWord)) continue;
+                    
+                    // Function to run the search
+                    const runSearch = (ignoreExistingCheck) => {
+                        const localResults = [];
+                        for (const word of wordBombList) {
+                             const cleanWord = cleanForExistingCheck(word);
+                             
+                             // Excludes (Always apply)
+                             if (excludeSet.has(word)) continue;
+                             if (permanentExcludeList.length > 0 && permanentExcludeList.some(ex => cleanWord.includes(ex))) continue; 
+                             
+                             // Missing Check (Conditional)
+                             if (!ignoreExistingCheck && existingSet.has(cleanWord)) continue;
 
-                         // Prompt Match (Supports Starts/Ends/Includes)
-                         let matchesPrompt = false;
-                         if (sortFilterType === 'starting') matchesPrompt = word.startsWith(activeQuery);
-                         else if (sortFilterType === 'ending') matchesPrompt = word.endsWith(activeQuery);
-                         else matchesPrompt = (activeQuery.length === 0 || word.includes(activeQuery));
-                         
-                         if (!matchesPrompt) continue;
-                         
-                         // SCORING (For Fallback)
-                         let score = 0;
-                         if (permanentIncludeList.length > 0) {
-                             permanentIncludeList.forEach((inc, index) => {
-                                 if (cleanWord.includes(inc)) {
-                                     // Higher score for matches earlier in the include list
-                                     score += Math.pow(10, permanentIncludeList.length - index);
-                                 }
-                             });
-                         }
-                         candidates.push({ word: word, lang: 'en', score: score });
+                             // Prompt Match
+                             let matchesPrompt = false;
+                             if (sortFilterType === 'starting') matchesPrompt = word.startsWith(activeQuery);
+                             else if (sortFilterType === 'ending') matchesPrompt = word.endsWith(activeQuery);
+                             else matchesPrompt = (activeQuery.length === 0 || word.includes(activeQuery));
+                             
+                             if (!matchesPrompt) continue;
+                             
+                             // Scoring
+                             let score = 0;
+                             if (permanentIncludeList.length > 0) {
+                                 permanentIncludeList.forEach((inc, index) => {
+                                     if (cleanWord.includes(inc)) {
+                                         score += Math.pow(10, permanentIncludeList.length - index);
+                                     }
+                                 });
+                             }
+                             localResults.push({ word: word, lang: 'en', score: score });
+                        }
+                        return localResults;
+                    };
+
+                    // 1. Try finding ACTUAL missing words
+                    candidates = runSearch(false);
+
+                    // 2. Fallback: If no missing words found, show ANY matching word (even if existing)
+                    if (candidates.length === 0) {
+                        candidates = runSearch(true);
                     }
                 }
                 // --- 2. Handle Word Bomb Multi-Lang Search ---
@@ -1606,8 +1629,6 @@
                     // Manual overrides still work if typed
                     if (query.toUpperCase().startsWith(':MC') || query.toUpperCase().startsWith(':MI')) { 
                         // Redirect to Minecraft logic immediately if typed
-                        // This requires us to jump to the standard logic block for minecraft
-                        // But since we are inside this block, we can just fetch from minecraftSet manually
                         activeQuery = query.substring(3).trim();
                         for (const word of minecraftSet) {
                              if (excludeSet.has(word)) continue;
@@ -1670,7 +1691,7 @@
                         if (singleLangMode === 'mc') {
                              searchSet(minecraftSet, 'mc');
                         } else {
-                            // Order: En, Fr, Sp, Po, In, Ge, Du, Fi, Mc (Sequential, not interleaved)
+                            // Order: En, Fr, Sp, Po, In, Ge, Du, Fi, Mc (Sequential)
                             searchSet(wordBombList, 'en');
                             searchSet(frenchList, 'fr');
                             searchSet(spanishList, 'sp');
@@ -1915,7 +1936,7 @@
                     const originalWord = item.word;
                     const lang = item.lang;
                     
-                    // Insert Separator if language changes
+                    // Insert Separator if language changes (Sequential Layout)
                     if (previousLang !== null && lang !== previousLang) {
                         const sep = document.createElement('div');
                         sep.className = 'lang-separator';
@@ -1936,11 +1957,8 @@
                     const highlightedHtml = highlightQuery(formattedWord, displayQuery);
                     const ttsIcon = `<span class="tts-icon">🔊</span>`;
                     
-                    // Add Lang Label
+                    // Add Lang Label (Only if not mixed mode, handled by separator)
                     let langLabel = '';
-                    if (lang !== 'default') {
-                        // langLabel = `<div class="word-lang-label">${getLangName(lang)}</div>`;
-                    }
                     
                     // FIXED: Using word-content-row for horizontal layout
                     wordElement.innerHTML = `${langLabel}<div class="word-content-row">${highlightedHtml}${ttsIcon}</div>`;
