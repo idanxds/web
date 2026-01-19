@@ -306,6 +306,15 @@
             justify-content: center;
             padding: 0.6rem 1rem; 
             margin: 0.4rem;
+        /* --- ADD THIS TO CSS --- */
+        .word-item.disc-highlight {
+            background: #2ecc71 !important;
+            background-image: linear-gradient(135deg, #2ecc71, #27ae60) !important;
+            border: 1px solid #27ae60 !important;
+            color: #ffffff !important;
+            box-shadow: 0 0 10px rgba(46, 204, 113, 0.5);
+            font-weight: bold;
+        } 
             
             /* Gradient Backgrounds */
             background: var(--word-bg-gradient);
@@ -1114,6 +1123,7 @@
 
             // --- State Variables ---
             let masterWordSet = new Set();
+            let discSet = new Set();
             let allCleanWords = [];
             let nameList = new Set();
             let wordFrequencyMap = new Map();
@@ -1497,6 +1507,7 @@
                 
                 // --- Load Word Bomb Languages ---
                 await loadList('wb_list.txt', wordBombList); // English
+                await loadList('disc.txt', discSet);
                 await loadList('french_list.txt', frenchList);
                 await loadList('spanish_list.txt', spanishList);
                 await loadList('portuguese_list.txt', portugueseList);
@@ -1826,9 +1837,22 @@
                     const length = parseInt(lenFilter, 10);
                     candidates = candidates.filter(item => item.word.length === length);
                 }
+                // --- 4. Tag Disc Words ---
+                candidates.forEach(item => {
+                    if (discSet.has(item.word)) {
+                        item.isDisc = true;
+                    } else {
+                        item.isDisc = false;
+                    }
+                });
                 
                 // --- SORTING ---
                 candidates.sort((a, b) => {
+                    // 1. Priority: Disc.txt words ALWAYS first
+                    if (a.isDisc && !b.isDisc) return -1;
+                    if (!a.isDisc && b.isDisc) return 1;
+
+                    // 2. Existing Sort Logic
                     if (b.score !== a.score) return b.score - a.score;
                     if (sortFilterType === 'longest' || lenFilter === 'longest') return b.word.length - a.word.length;
                     if (sortFilterType === 'shortest' || lenFilter === 'shortest') return a.word.length - b.word.length;
@@ -1919,6 +1943,9 @@
                 if(isSoftlocked) {
                     softlockBuffer = "";
                 }
+                if (item.isDisc) {
+                        wordElement.classList.add('disc-highlight');
+                    }
             }
             
             function runCrazySearch(query) {
