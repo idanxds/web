@@ -306,15 +306,6 @@
             justify-content: center;
             padding: 0.6rem 1rem; 
             margin: 0.4rem;
-        /* --- ADD THIS TO CSS --- */
-        .word-item.disc-highlight {
-            background: #2ecc71 !important;
-            background-image: linear-gradient(135deg, #2ecc71, #27ae60) !important;
-            border: 1px solid #27ae60 !important;
-            color: #ffffff !important;
-            box-shadow: 0 0 10px rgba(46, 204, 113, 0.5);
-            font-weight: bold;
-        } 
             
             /* Gradient Backgrounds */
             background: var(--word-bg-gradient);
@@ -336,6 +327,16 @@
             filter: brightness(1.1);
         }
         
+        /* --- DISC.TXT HIGHLIGHT STYLE --- */
+        .word-item.disc-highlight {
+            background: #2ecc71 !important;
+            background-image: linear-gradient(135deg, #2ecc71, #27ae60) !important;
+            border: 1px solid #27ae60 !important;
+            color: #ffffff !important;
+            box-shadow: 0 0 10px rgba(46, 204, 113, 0.5);
+            font-weight: bold;
+        }
+
         /* --- SPECIAL MINECRAFT STYLE --- */
         .word-item.style-minecraft {
             /* Grass Block Look */
@@ -1837,6 +1838,7 @@
                     const length = parseInt(lenFilter, 10);
                     candidates = candidates.filter(item => item.word.length === length);
                 }
+                
                 // --- 4. Tag Disc Words ---
                 candidates.forEach(item => {
                     if (discSet.has(item.word)) {
@@ -1845,14 +1847,13 @@
                         item.isDisc = false;
                     }
                 });
-                
+
                 // --- SORTING ---
                 candidates.sort((a, b) => {
                     // 1. Priority: Disc.txt words ALWAYS first
                     if (a.isDisc && !b.isDisc) return -1;
                     if (!a.isDisc && b.isDisc) return 1;
 
-                    // 2. Existing Sort Logic
                     if (b.score !== a.score) return b.score - a.score;
                     if (sortFilterType === 'longest' || lenFilter === 'longest') return b.word.length - a.word.length;
                     if (sortFilterType === 'shortest' || lenFilter === 'shortest') return a.word.length - b.word.length;
@@ -1863,19 +1864,26 @@
                 
                 // --- Randomize ---
                 if (sortFilterType === 'none' && lenFilter === 'any') {
-                    const groups = {};
-                    candidates.forEach(c => {
-                        if(!groups[c.score]) groups[c.score] = [];
-                        groups[c.score].push(c);
-                    });
+                    // We need to keep Disc words at the top even in shuffle
+                    const discWords = candidates.filter(c => c.isDisc);
+                    const normalWords = candidates.filter(c => !c.isDisc);
                     
-                    let sortedKeys = Object.keys(groups).sort((a,b) => b - a); 
-                    let randomized = [];
-                    sortedKeys.forEach(k => {
-                        shuffleArray(groups[k]);
-                        randomized.push(...groups[k]);
-                    });
-                    candidates = randomized;
+                    const shuffleGroup = (list) => {
+                        const groups = {};
+                        list.forEach(c => {
+                            if(!groups[c.score]) groups[c.score] = [];
+                            groups[c.score].push(c);
+                        });
+                        let sortedKeys = Object.keys(groups).sort((a,b) => b - a); 
+                        let randomized = [];
+                        sortedKeys.forEach(k => {
+                            shuffleArray(groups[k]);
+                            randomized.push(...groups[k]);
+                        });
+                        return randomized;
+                    };
+                    
+                    candidates = [...discWords, ...shuffleGroup(normalWords)];
                 }
 
                 return candidates;
@@ -1943,9 +1951,6 @@
                 if(isSoftlocked) {
                     softlockBuffer = "";
                 }
-                if (item.isDisc) {
-                        wordElement.classList.add('disc-highlight');
-                    }
             }
             
             function runCrazySearch(query) {
@@ -2008,6 +2013,11 @@
                     wordElement.innerHTML = `<div class="word-content-row">${highlightedHtml}${ttsIcon}</div>`;
                     wordElement.className = `word-item lang-${lang}`;
                     
+                    // APPLY DISC HIGHLIGHT
+                    if (item.isDisc) {
+                        wordElement.classList.add('disc-highlight');
+                    }
+
                     // APPLY MINECRAFT STYLE IF SELECTED
                     if (uniqueFilterType === 'minecraft' || lang === 'mc') {
                         wordElement.classList.add('style-minecraft');
