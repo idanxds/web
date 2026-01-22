@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Advanced Word Finder (Disc Mode)</title>
+    <title>Advanced Word Finder</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
@@ -327,6 +327,16 @@
             filter: brightness(1.1);
         }
         
+        /* --- DISC.TXT HIGHLIGHT STYLE --- */
+        .word-item.disc-highlight {
+            background: #2ecc71 !important;
+            background-image: linear-gradient(135deg, #2ecc71, #27ae60) !important;
+            border: 1px solid #27ae60 !important;
+            color: #ffffff !important;
+            box-shadow: 0 0 10px rgba(46, 204, 113, 0.5);
+            font-weight: bold;
+        }
+
         /* --- SPECIAL MINECRAFT STYLE --- */
         .word-item.style-minecraft {
             /* Grass Block Look */
@@ -728,19 +738,6 @@
             color: var(--check-color);
         }
         
-        /* --- DISC.TXT HIGHLIGHT STYLE (FORCED OVERRIDE) --- */
-        /* Placed at the very end to ensure priority */
-        #results-container .word-item.disc-highlight {
-            background: #2ecc71 !important;
-            background-image: linear-gradient(135deg, #2ecc71, #27ae60) !important;
-            border: 2px solid #27ae60 !important;
-            color: #ffffff !important;
-            box-shadow: 0 0 15px rgba(46, 204, 113, 0.6) !important;
-            font-weight: bold !important;
-            order: -1 !important; /* Flexbox trick to help sort visually if JS fails */
-            transform: scale(1.02);
-        }
-
         /* Responsive Layout */
         @media (max-width: 900px) {
             body {
@@ -1159,7 +1156,7 @@
             let isCrazyMode = false;
             
             // --- Specialized Lists ---
-            let wordBombList = new Set(); 
+            let wordBombList = new Set(); // English (wb_list.txt)
             let frenchList = new Set(); 
             let spanishList = new Set(); 
             let portugueseList = new Set();
@@ -1167,8 +1164,8 @@
             let germanList = new Set();
             let dutchList = new Set();
             let finnishList = new Set();
-            let existingSet = new Set(); 
-            let minecraftSet = new Set(); 
+            let existingSet = new Set(); // existing.txt words (normalized)
+            let minecraftSet = new Set(); // Minecraft words
             
             let brandsSet = new Set();
             let countriesSet = new Set(); 
@@ -1449,26 +1446,22 @@
         async function loadAndProcessFile() {
             try {
                 loadingMessage.style.display = 'block';
-                const loadList = async (filename, targetSet, isExistingFile = false, forceLower = false) => {
+                const loadList = async (filename, targetSet, isExistingFile = false) => {
                     try {
                         const res = await fetch(filename);
                         if (res.ok) {
                             const text = await res.text();
                             text.split('\n').forEach(line => {
                                 let word = line.trim();
-                                // Clean the word based on rules
+                                // If it's the existing file, clean it aggressively
                                 if (isExistingFile) {
                                     word = cleanForExistingCheck(word);
-                                } else if (forceLower) {
-                                    word = word.toLowerCase();
                                 } else {
                                     word = word.toLowerCase();
                                 }
                                 if (word.length > 0) targetSet.add(word); 
                             });
                             console.log(`Loaded ${filename}: ${targetSet.size} items.`);
-                        } else {
-                            console.warn(`Failed to load ${filename}: ${res.status}`);
                         }
                     } catch (e) { console.warn(`Skipped ${filename}: ${e.message}`);
                     }
@@ -1514,17 +1507,8 @@
                 await loadList('palindromes_list.txt', palindromesSet);
                 
                 // --- Load Word Bomb Languages ---
-                await loadList('wb_list.txt', wordBombList); 
-                
-                // --- CRITICAL CHANGE: FORCE LOWERCASE ON DISC.TXT ---
-                await loadList('disc.txt', discSet, false, true);
-                // Temporary Debug Alert to verify loading
-                if (discSet.size > 0) {
-                    console.log(`SUCCESS: disc.txt loaded with ${discSet.size} words.`);
-                } else {
-                    alert("WARNING: disc.txt loaded 0 words. Check file path or content.");
-                }
-
+                await loadList('wb_list.txt', wordBombList); // English
+                await loadList('disc.txt', discSet);
                 await loadList('french_list.txt', frenchList);
                 await loadList('spanish_list.txt', spanishList);
                 await loadList('portuguese_list.txt', portugueseList);
@@ -1603,6 +1587,9 @@
                 // Detect Regex
                 let searchRegex = null;
                 try {
+                    // Only treat as regex if it contains special chars to avoid overhead on simple searches
+                    // Allowed simple chars: letters, numbers, spaces, hyphens.
+                    // Special chars: ^ $ . * + ? ( ) [ ] { } | \
                     if (/[^a-zA-Z0-9\s\-]/.test(query)) {
                         searchRegex = new RegExp(query, 'i');
                     }
@@ -1625,19 +1612,25 @@
                 if (activeFilterType === 'wb-missing') {
                     let activeQuery = query.replace(/ /g, '-');
                     
+                    // Function to run the search with flexibility layers
                     const runSearch = (ignoreExistingCheck, ignoreIncludes, ignoreExcludes) => {
                         const localResults = [];
                         for (const word of wordBombList) {
                              const cleanWord = cleanForExistingCheck(word);
                              
+                             // Excludes logic
                              if (!ignoreExcludes) {
                                  if (excludeSet.has(word)) continue;
                                  if (permanentExcludeList.length > 0 && permanentExcludeList.some(ex => cleanWord.includes(ex))) continue; 
                              }
 
+                             // Missing Check
                              if (!ignoreExistingCheck && existingSet.has(cleanWord)) continue;
+
+                             // Prompt Match
                              if (!checkMatch(word, activeQuery)) continue;
                              
+                             // Include Logic
                              let score = 0;
                              if (!ignoreIncludes && permanentIncludeList.length > 0) {
                                  let hasIncludeMatch = false;
@@ -1647,16 +1640,20 @@
                                          hasIncludeMatch = true;
                                      }
                                  });
-                                 if (!hasIncludeMatch) continue; 
+                                 if (!hasIncludeMatch) continue; // Skip if strict include matches nothing
                              }
                              localResults.push({ word: word, lang: 'en', score: score });
                         }
                         return localResults;
                     };
 
+                    // Priority 1: Strict (Matches Missing + Includes + Excludes)
                     candidates = runSearch(false, false, false);
+                    // Priority 2: Ignore Includes (Matches Missing + Excludes)
                     if (candidates.length === 0) candidates = runSearch(false, true, false);
+                    // Priority 3: Ignore Missing check (Matches Includes + Excludes) -> Fallback to used words
                     if (candidates.length === 0) candidates = runSearch(true, false, false);
+                    // Priority 4: Total Fallback (Ignore Missing + Includes + Excludes) -> Show whatever matches prompt
                     if (candidates.length === 0) candidates = runSearch(true, true, true);
                 }
                 // --- 2. Handle Word Bomb Multi-Lang Search ---
@@ -1666,9 +1663,12 @@
 
                     if (query.toUpperCase().startsWith(':MC') || query.toUpperCase().startsWith(':MI')) { 
                         activeQuery = query.substring(3).trim();
+                        // Run single search for MC
+                        // logic embedded below in singleLangMode check, but handled here for manual override
                         singleLangMode = 'mc';
                     } else if (query.toUpperCase().startsWith(':FR')) { targetLang = 'fr'; activeQuery = query.substring(3).trim(); }
                     else if (query.toUpperCase().startsWith(':EN')) { targetLang = 'en'; activeQuery = query.substring(3).trim(); }
+                    // ... (rest handled by standard flow) ...
 
                     activeQuery = activeQuery.replace(/ /g, '-');
                     
@@ -1702,6 +1702,7 @@
                     if (singleLangMode === 'mc' || activeFilterType === 'minecraft') {
                         setsToSearch.push({set: minecraftSet, lang: 'mc'});
                     } else if (singleLangMode) {
+                        // Map lang code to set
                         if (singleLangMode === 'en') setsToSearch.push({set: wordBombList, lang: 'en'});
                         if (singleLangMode === 'fr') setsToSearch.push({set: frenchList, lang: 'fr'});
                         if (singleLangMode === 'sp') setsToSearch.push({set: spanishList, lang: 'sp'});
@@ -1711,6 +1712,7 @@
                         if (singleLangMode === 'du') setsToSearch.push({set: dutchList, lang: 'du'});
                         if (singleLangMode === 'fi') setsToSearch.push({set: finnishList, lang: 'fi'});
                     } else {
+                        // All langs
                         setsToSearch.push({set: wordBombList, lang: 'en'});
                         setsToSearch.push({set: frenchList, lang: 'fr'});
                         setsToSearch.push({set: spanishList, lang: 'sp'});
@@ -1722,10 +1724,12 @@
                         setsToSearch.push({set: minecraftSet, lang: 'mc'});
                     }
                     
+                    // execute search with fallback levels for EACH language set
                     for (const item of setsToSearch) {
-                        let langResults = runLangSearch(item.set, item.lang, false, false);
-                        if (langResults.length === 0) langResults = runLangSearch(item.set, item.lang, true, false); 
-                        if (langResults.length === 0) langResults = runLangSearch(item.set, item.lang, true, true); 
+                        let langResults = runLangSearch(item.set, item.lang, false, false); // Strict
+                        if (langResults.length === 0) langResults = runLangSearch(item.set, item.lang, true, false); // Ignore Include
+                        if (langResults.length === 0) langResults = runLangSearch(item.set, item.lang, true, true); // Ignore Exclude (Fallback)
+                        
                         candidates.push(...langResults);
                     }
                 }
@@ -1762,6 +1766,7 @@
                         default: sourceList = allCleanWords; break;
                     }
                     
+                    // Special logic for other unique filters...
                     if (activeFilterType === 'pattern') {
                         try { patternRegex = new RegExp(query.replace(/_/g, '.'), 'i'); } catch (e) { return []; }
                     }
@@ -1787,9 +1792,11 @@
 
                             let matchesBase = false;
                             
+                            // Check Regex / Prompt Match first
                             if (activeFilterType === 'pattern' || activeFilterType === 'v-c-pattern') {
                                 matchesBase = patternRegex.test(word);
                             } else if (activeFilterType === 'anagram') {
+                                // ... anagram logic ...
                                 const wordCharMap = getCharMap(word);
                                 matchesBase = true;
                                 for (const char in wordCharMap) {
@@ -1798,6 +1805,7 @@
                             } else if (activeFilterType === 'include-all') {
                                 if (queryLetterSet) matchesBase = [...queryLetterSet].every(letter => word.includes(letter));
                             } else {
+                                // Default Search
                                 matchesBase = checkMatch(word, query);
                             }
 
@@ -1819,19 +1827,21 @@
                         return localResults;
                     }
                     
+                    // Fallback Sequence
                     candidates = runStandardSearch(false, false);
                     if (candidates.length === 0) candidates = runStandardSearch(true, false);
                     if (candidates.length === 0) candidates = runStandardSearch(true, true);
                 }
                 
+                // --- Filter by Length ---
                 if (lenFilter !== 'any' && lenFilter !== 'longest' && lenFilter !== 'shortest') {
                     const length = parseInt(lenFilter, 10);
                     candidates = candidates.filter(item => item.word.length === length);
                 }
                 
-                // --- 4. Tag Disc Words (With Safe Lowercase Check) ---
+                // --- 4. Tag Disc Words ---
                 candidates.forEach(item => {
-                    if (discSet.has(item.word) || discSet.has(item.word.toLowerCase())) {
+                    if (discSet.has(item.word)) {
                         item.isDisc = true;
                     } else {
                         item.isDisc = false;
@@ -1854,7 +1864,7 @@
                 
                 // --- Randomize ---
                 if (sortFilterType === 'none' && lenFilter === 'any') {
-                    // Keep Disc words at top, shuffle rest
+                    // We need to keep Disc words at the top even in shuffle
                     const discWords = candidates.filter(c => c.isDisc);
                     const normalWords = candidates.filter(c => !c.isDisc);
                     
@@ -1990,6 +2000,7 @@
                     const wordElement = document.createElement('span');
                     const formattedWord = applyCapping(originalWord, capMode);
                     
+                    // Highlight logic needs to handle WB queries (spaces vs hyphens)
                     let displayQuery = query;
                     if ((uniqueFilterType === 'word-bomb' || uniqueFilterType === 'wb-missing') && (query.startsWith(':') || query.includes(' '))) {
                          displayQuery = query.replace(/^:.. /, '').replace(/ /g, '-');
@@ -1998,6 +2009,7 @@
                     const highlightedHtml = highlightQuery(formattedWord, displayQuery);
                     const ttsIcon = `<span class="tts-icon">🔊</span>`;
                     
+                    // FIXED: Using word-content-row for horizontal layout
                     wordElement.innerHTML = `<div class="word-content-row">${highlightedHtml}${ttsIcon}</div>`;
                     wordElement.className = `word-item lang-${lang}`;
                     
@@ -2006,6 +2018,7 @@
                         wordElement.classList.add('disc-highlight');
                     }
 
+                    // APPLY MINECRAFT STYLE IF SELECTED
                     if (uniqueFilterType === 'minecraft' || lang === 'mc') {
                         wordElement.classList.add('style-minecraft');
                     }
