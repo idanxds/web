@@ -1064,7 +1064,7 @@
         </div>
     </div>
 
-    <script>
+<script>
         document.addEventListener('DOMContentLoaded', () => {
 
             // --- Element References ---
@@ -1127,7 +1127,7 @@
 
             // --- State Variables ---
             let masterWordSet = new Set();
-            let discSet = new Set();
+            let discSet = new Set(); // Stores words from disc.txt
             let allCleanWords = [];
             let nameList = new Set();
             let wordFrequencyMap = new Map();
@@ -1190,8 +1190,6 @@
             let palindromesSet = new Set();
 
             // --- Utility Functions ---
-            
-            // Strict Cleaning Function for Comparisons
             function cleanForExistingCheck(str) {
                 return str.toLowerCase().replace(/[\^*]/g, '').trim();
             }
@@ -1456,7 +1454,6 @@
                             const text = await res.text();
                             text.split('\n').forEach(line => {
                                 let word = line.trim();
-                                // Clean the word based on rules
                                 if (isExistingFile) {
                                     word = cleanForExistingCheck(word);
                                 } else if (forceLower) {
@@ -1503,7 +1500,6 @@
                 await loadList('bgames_list.txt', boardGamesSet);
                 await loadList('vgames_list.txt', videoGamesSet);
                 
-                // --- MINECRAFT FALLBACK LIST ---
                 const minecraftDefaults = ["steve", "alex", "creeper", "zombie", "skeleton", "enderman", "spider", "villager", "witch", "slime", "ghast", "blaze", "wither", "ender dragon", "pig", "cow", "sheep", "chicken", "wolf", "ocelot", "horse", "donkey", "mule", "llama", "polar bear", "panda", "fox", "bee", "turtle", "dolphin", "squid", "cod", "salmon", "pufferfish", "tropical fish", "axolotl", "glow squid", "goat", "frog", "tadpole", "allay", "warden", "iron golem", "snow golem", "magma cube", "phantom", "ravager", "piglin", "hoglin", "zombified piglin", "strider", "diamond", "gold", "iron", "emerald", "redstone", "lapis lazuli", "coal", "netherite", "quartz", "obsidian", "bedrock", "dirt", "grass", "stone", "sand", "gravel", "clay", "wood", "planks", "crafting table", "furnace", "chest", "bed", "torch", "tnt"];
                 minecraftDefaults.forEach(w => minecraftSet.add(w));
                 await loadList('minecraft.txt', minecraftSet);
@@ -1513,17 +1509,10 @@
                 await loadList('religions_list.txt', religionsSet);
                 await loadList('palindromes_list.txt', palindromesSet);
                 
-                // --- Load Word Bomb Languages ---
                 await loadList('wb_list.txt', wordBombList); 
                 
-                // --- CRITICAL CHANGE: FORCE LOWERCASE ON DISC.TXT ---
+                // --- Load disc.txt (Force Lowercase) ---
                 await loadList('disc.txt', discSet, false, true);
-                // Temporary Debug Alert to verify loading
-                if (discSet.size > 0) {
-                    console.log(`SUCCESS: disc.txt loaded with ${discSet.size} words.`);
-                } else {
-                    alert("WARNING: disc.txt loaded 0 words. Check file path or content.");
-                }
 
                 await loadList('french_list.txt', frenchList);
                 await loadList('spanish_list.txt', spanishList);
@@ -1533,7 +1522,6 @@
                 await loadList('dutch_list.txt', dutchList);
                 await loadList('finnish_list.txt', finnishList);
                 
-                // Load existing.txt using strict cleaning
                 await loadList('existing.txt', existingSet, true); 
         
                 try {
@@ -1583,278 +1571,226 @@
             }
         }
 
-            // --- findWords (FIXED: RANKED FALLBACK SYSTEM WITH EXCLUDE & REGEX) ---
+            // --- findWords (UNION STRATEGY) ---
+            // This now independently checks the filter list AND the disc list, then merges them.
             function findWords(query, uniqueFilterType, sortFilterType, lenFilter, wordsToExclude = []) {
                 const excludeSet = new Set(wordsToExclude);
                 let candidates = [];
-                
-                // --- Determine actual filter based on Dropdown + WB Select ---
-                let activeFilterType = uniqueFilterType;
-                let singleLangMode = null;
-                
-                const wbLang = wbLangSelect.value;
-                if (uniqueFilterType === 'word-bomb' && wbLang !== 'all') {
-                    if (wbLang === 'mc') activeFilterType = 'minecraft'; 
-                    else {
-                        singleLangMode = wbLang; 
-                    }
-                }
+                let candidateMap = new Map(); // Use Map to prevent duplicates: key = word, val = item object
 
-                // Detect Regex
+                // 1. Determine Search Regex / Pattern
                 let searchRegex = null;
+                let patternRegex = null;
+                let queryCharMap = null;
+                let queryLetterSet = null;
+                
                 try {
                     if (/[^a-zA-Z0-9\s\-]/.test(query)) {
                         searchRegex = new RegExp(query, 'i');
                     }
-                } catch (e) {
-                    searchRegex = null;
+                } catch (e) { searchRegex = null; }
+
+                if (uniqueFilterType === 'pattern') {
+                    try { patternRegex = new RegExp(query.replace(/_/g, '.'), 'i'); } catch (e) {}
+                } else if (uniqueFilterType === 'v-c-pattern') {
+                    try {
+                        const pattern = query.replace(/v/gi, '[aeiouy]').replace(/c/gi, '[bcdfghjklmnpqrstvwxyz]');
+                        patternRegex = new RegExp(`^${pattern}$`);
+                    } catch (e) {}
+                } else if (uniqueFilterType === 'anagram') {
+                    queryCharMap = getCharMap(query);
+                } else if (uniqueFilterType === 'include-all') {
+                    queryLetterSet = new Set(query.split(''));
                 }
 
-                // Common Matching Logic
+                // --- Helper: Check if word matches query/pattern ---
                 const checkMatch = (word, activeQuery) => {
-                    if (searchRegex) {
-                        return searchRegex.test(word);
+                    let matches = false;
+                    if (activeQuery === undefined) activeQuery = query;
+
+                    if (uniqueFilterType === 'pattern' || uniqueFilterType === 'v-c-pattern') {
+                        matches = patternRegex && patternRegex.test(word);
+                    } else if (uniqueFilterType === 'anagram') {
+                        const wordCharMap = getCharMap(word);
+                        matches = true;
+                        for (const char in wordCharMap) {
+                            if (!queryCharMap[char] || wordCharMap[char] > queryCharMap[char]) { matches = false; break; }
+                        }
+                    } else if (uniqueFilterType === 'include-all') {
+                        if (queryLetterSet) matches = [...queryLetterSet].every(letter => word.includes(letter));
+                    } else if (searchRegex) {
+                        matches = searchRegex.test(word);
                     } else {
-                        if (sortFilterType === 'starting') return word.startsWith(activeQuery);
-                        else if (sortFilterType === 'ending') return word.endsWith(activeQuery);
-                        else return (activeQuery.length === 0 || word.includes(activeQuery));
+                        // Standard Substring Match
+                        if (sortFilterType === 'starting') matches = word.startsWith(activeQuery);
+                        else if (sortFilterType === 'ending') matches = word.endsWith(activeQuery);
+                        else matches = (activeQuery.length === 0 || word.includes(activeQuery));
+                    }
+                    return matches;
+                };
+
+                // --- Helper: Run Search on a specific List ---
+                const runSearchOnList = (sourceList, langLabel, ignoreExisting = false) => {
+                    let activeQuery = query;
+                    // Handle Word Bomb prefixes if searching regular lists
+                    if ((uniqueFilterType === 'word-bomb' || uniqueFilterType === 'wb-missing') && (query.startsWith(':') || query.includes(' '))) {
+                         activeQuery = query.replace(/^:.. /, '').replace(/ /g, '-');
+                    }
+
+                    for (const word of sourceList) {
+                        // Exclude Logic
+                        if (excludeSet.has(word)) continue;
+                        if (permanentExcludeList.length > 0 && permanentExcludeList.some(ex => word.includes(ex))) continue;
+
+                        // WB Missing Logic (Skip if word exists in existingSet)
+                        if (uniqueFilterType === 'wb-missing' && !ignoreExisting) {
+                            const cleanWord = cleanForExistingCheck(word);
+                            if (existingSet.has(cleanWord)) continue;
+                        }
+
+                        if (!checkMatch(word, activeQuery)) continue;
+
+                        // Include Logic
+                        let score = 0;
+                        if (permanentIncludeList.length > 0) {
+                            let hasIncludeMatch = false;
+                            permanentIncludeList.forEach((inc, index) => {
+                                if (word.includes(inc)) {
+                                    score += Math.pow(10, permanentIncludeList.length - index);
+                                    hasIncludeMatch = true;
+                                }
+                            });
+                            // If in standard mode, enforce includes. If Disc search, we might be lenient, but consistency is better.
+                            if (!hasIncludeMatch) continue; 
+                        }
+
+                        // Add to Map
+                        if (!candidateMap.has(word)) {
+                            candidateMap.set(word, { word: word, lang: langLabel, score: score, isDisc: false });
+                        }
                     }
                 };
 
-                // --- 1. Handle Word Bomb Missing Filter (Specific Case) ---
+                // --- 2. EXECUTE PRIMARY FILTER SEARCH ---
+                // Identify which list(s) to search based on dropdowns
+                
+                let primaryLists = []; // Array of { set: Set, lang: string }
+                let activeFilterType = uniqueFilterType;
+                
+                const wbLang = wbLangSelect.value;
+                let singleLangMode = null;
+                
+                if (uniqueFilterType === 'word-bomb' && wbLang !== 'all') {
+                    if (wbLang === 'mc') activeFilterType = 'minecraft'; else singleLangMode = wbLang;
+                }
+
+                // Case: WB Missing
                 if (activeFilterType === 'wb-missing') {
-                    let activeQuery = query.replace(/ /g, '-');
-                    
-                    const runSearch = (ignoreExistingCheck, ignoreIncludes, ignoreExcludes) => {
-                        const localResults = [];
-                        for (const word of wordBombList) {
-                             const cleanWord = cleanForExistingCheck(word);
-                             
-                             if (!ignoreExcludes) {
-                                 if (excludeSet.has(word)) continue;
-                                 if (permanentExcludeList.length > 0 && permanentExcludeList.some(ex => cleanWord.includes(ex))) continue; 
-                             }
-
-                             if (!ignoreExistingCheck && existingSet.has(cleanWord)) continue;
-                             if (!checkMatch(word, activeQuery)) continue;
-                             
-                             let score = 0;
-                             if (!ignoreIncludes && permanentIncludeList.length > 0) {
-                                 let hasIncludeMatch = false;
-                                 permanentIncludeList.forEach((inc, index) => {
-                                     if (cleanWord.includes(inc)) {
-                                         score += Math.pow(10, permanentIncludeList.length - index);
-                                         hasIncludeMatch = true;
-                                     }
-                                 });
-                                 if (!hasIncludeMatch) continue; 
-                             }
-                             localResults.push({ word: word, lang: 'en', score: score });
-                        }
-                        return localResults;
-                    };
-
-                    candidates = runSearch(false, false, false);
-                    if (candidates.length === 0) candidates = runSearch(false, true, false);
-                    if (candidates.length === 0) candidates = runSearch(true, false, false);
-                    if (candidates.length === 0) candidates = runSearch(true, true, true);
+                    primaryLists.push({ set: wordBombList, lang: 'en' });
                 }
-                // --- 2. Handle Word Bomb Multi-Lang Search ---
+                // Case: Word Bomb (Multi Lang)
                 else if (activeFilterType === 'word-bomb') {
-                    let targetLang = 'en';
-                    let activeQuery = query;
-
-                    if (query.toUpperCase().startsWith(':MC') || query.toUpperCase().startsWith(':MI')) { 
-                        activeQuery = query.substring(3).trim();
-                        singleLangMode = 'mc';
-                    } else if (query.toUpperCase().startsWith(':FR')) { targetLang = 'fr'; activeQuery = query.substring(3).trim(); }
-                    else if (query.toUpperCase().startsWith(':EN')) { targetLang = 'en'; activeQuery = query.substring(3).trim(); }
-
-                    activeQuery = activeQuery.replace(/ /g, '-');
-                    
-                    const runLangSearch = (set, langCode, ignoreIncludes, ignoreExcludes) => {
-                         const localResults = [];
-                         for (const word of set) {
-                             if (!ignoreExcludes) {
-                                 if (excludeSet.has(word)) continue; 
-                                 if (permanentExcludeList.length > 0 && permanentExcludeList.some(ex => word.includes(ex))) continue; 
-                             }
-                             
-                             if (!checkMatch(word, activeQuery)) continue;
-                             
-                             let score = 0;
-                             if (!ignoreIncludes && permanentIncludeList.length > 0) {
-                                 let hasIncludeMatch = false;
-                                 permanentIncludeList.forEach((inc, index) => {
-                                     if (word.includes(inc)) {
-                                         score += Math.pow(10, permanentIncludeList.length - index);
-                                         hasIncludeMatch = true;
-                                     }
-                                 });
-                                 if (!hasIncludeMatch) continue;
-                             }
-                             localResults.push({ word: word, lang: langCode, score: score });
+                    if (query.toUpperCase().startsWith(':MC')) activeFilterType = 'minecraft'; // Override
+                    else {
+                        if (singleLangMode === 'en') primaryLists.push({set: wordBombList, lang: 'en'});
+                        else if (singleLangMode === 'fr') primaryLists.push({set: frenchList, lang: 'fr'});
+                        else if (singleLangMode === 'sp') primaryLists.push({set: spanishList, lang: 'sp'});
+                        else if (singleLangMode === 'po') primaryLists.push({set: portugueseList, lang: 'po'});
+                        else if (singleLangMode === 'in') primaryLists.push({set: indonesianList, lang: 'in'});
+                        else if (singleLangMode === 'ge') primaryLists.push({set: germanList, lang: 'ge'});
+                        else if (singleLangMode === 'du') primaryLists.push({set: dutchList, lang: 'du'});
+                        else if (singleLangMode === 'fi') primaryLists.push({set: finnishList, lang: 'fi'});
+                        else if (singleLangMode === 'mc') primaryLists.push({set: minecraftSet, lang: 'mc'});
+                        else {
+                            // All
+                            primaryLists.push({set: wordBombList, lang: 'en'}); primaryLists.push({set: frenchList, lang: 'fr'});
+                            primaryLists.push({set: spanishList, lang: 'sp'}); primaryLists.push({set: portugueseList, lang: 'po'});
+                            primaryLists.push({set: indonesianList, lang: 'in'}); primaryLists.push({set: germanList, lang: 'ge'});
+                            primaryLists.push({set: dutchList, lang: 'du'}); primaryLists.push({set: finnishList, lang: 'fi'});
+                            primaryLists.push({set: minecraftSet, lang: 'mc'});
                         }
-                        return localResults;
-                    };
-                    
-                    const setsToSearch = [];
-                    if (singleLangMode === 'mc' || activeFilterType === 'minecraft') {
-                        setsToSearch.push({set: minecraftSet, lang: 'mc'});
-                    } else if (singleLangMode) {
-                        if (singleLangMode === 'en') setsToSearch.push({set: wordBombList, lang: 'en'});
-                        if (singleLangMode === 'fr') setsToSearch.push({set: frenchList, lang: 'fr'});
-                        if (singleLangMode === 'sp') setsToSearch.push({set: spanishList, lang: 'sp'});
-                        if (singleLangMode === 'po') setsToSearch.push({set: portugueseList, lang: 'po'});
-                        if (singleLangMode === 'in') setsToSearch.push({set: indonesianList, lang: 'in'});
-                        if (singleLangMode === 'ge') setsToSearch.push({set: germanList, lang: 'ge'});
-                        if (singleLangMode === 'du') setsToSearch.push({set: dutchList, lang: 'du'});
-                        if (singleLangMode === 'fi') setsToSearch.push({set: finnishList, lang: 'fi'});
-                    } else {
-                        setsToSearch.push({set: wordBombList, lang: 'en'});
-                        setsToSearch.push({set: frenchList, lang: 'fr'});
-                        setsToSearch.push({set: spanishList, lang: 'sp'});
-                        setsToSearch.push({set: portugueseList, lang: 'po'});
-                        setsToSearch.push({set: indonesianList, lang: 'in'});
-                        setsToSearch.push({set: germanList, lang: 'ge'});
-                        setsToSearch.push({set: dutchList, lang: 'du'});
-                        setsToSearch.push({set: finnishList, lang: 'fi'});
-                        setsToSearch.push({set: minecraftSet, lang: 'mc'});
                     }
-                    
-                    for (const item of setsToSearch) {
-                        let langResults = runLangSearch(item.set, item.lang, false, false);
-                        if (langResults.length === 0) langResults = runLangSearch(item.set, item.lang, true, false); 
-                        if (langResults.length === 0) langResults = runLangSearch(item.set, item.lang, true, true); 
-                        candidates.push(...langResults);
-                    }
-                }
-                // --- 3. Standard Search Logic ---
-                else {
-                    let patternRegex = null;
-                    let queryCharMap = null;
-                    let queryLetterSet = null;
-                    let sourceList;
-
-                    switch (activeFilterType) {
-                        case 'german': sourceList = Array.from(germanList); break;
-                        case 'dutch': sourceList = Array.from(dutchList); break;
-                        case 'finnish': sourceList = Array.from(finnishList); break;
-                        case 'names': sourceList = Array.from(nameList); break;
-                        case 'brands': sourceList = Array.from(brandsSet); break;
-                        case 'countries': sourceList = Array.from(countriesSet); break;
-                        case 'bad': sourceList = Array.from(badSet); break;
-                        case 'science': sourceList = Array.from(scienceSet); break;
-                        case 'jobs': sourceList = Array.from(jobsSet); break;
-                        case 'languages': sourceList = Array.from(languagesSet); break;
-                        case 'phobias': sourceList = Array.from(phobiasMap.keys()); break;
-                        case 'animals': sourceList = Array.from(animalsSet); break;
-                        case 'sports': sourceList = Array.from(sportsSet); break;
-                        case 'colors': sourceList = Array.from(colorsSet); break;
-                        case 'board-games': sourceList = Array.from(boardGamesSet); break;
-                        case 'video-games': sourceList = Array.from(videoGamesSet); break;
-                        case 'minecraft': sourceList = Array.from(minecraftSet); break;
-                        case 'foods': sourceList = Array.from(foodsSet); break;
-                        case 'cities': sourceList = Array.from(citiesSet); break;
-                        case 'diseases': sourceList = Array.from(diseasesSet); break;
-                        case 'religions': sourceList = Array.from(religionsSet); break;
-                        case 'palindromes': sourceList = Array.from(palindromesSet); break;
-                        default: sourceList = allCleanWords; break;
-                    }
-                    
-                    if (activeFilterType === 'pattern') {
-                        try { patternRegex = new RegExp(query.replace(/_/g, '.'), 'i'); } catch (e) { return []; }
-                    }
-                    if (activeFilterType === 'v-c-pattern') {
-                        try {
-                            const pattern = query.replace(/v/gi, '[aeiouy]').replace(/c/gi, '[bcdfghjklmnpqrstvwxyz]');
-                            patternRegex = new RegExp(`^${pattern}$`);
-                        } catch (e) { return []; }
-                    }
-                    if (activeFilterType === 'anagram') { queryCharMap = getCharMap(query); }
-                    if (activeFilterType === 'include-all') { queryLetterSet = new Set(query.split('')); }
-
-                    const specializedLists = ['countries', 'names', 'brands', 'bad', 'science', 'jobs', 'languages', 'phobias', 'animals', 'sports', 'colors', 'board-games', 'video-games', 'minecraft', 'foods', 'cities', 'diseases', 'religions', 'palindromes'];
-                    const usePermanentFilters = !specializedLists.includes(activeFilterType) || activeFilterType === 'minecraft';
-
-                    const runStandardSearch = (ignoreIncludes, ignoreExcludes) => {
-                         const localResults = [];
-                         for (const word of sourceList) {
-                            if (!ignoreExcludes) {
-                                if (excludeSet.has(word)) continue;
-                                if (usePermanentFilters && permanentExcludeList.length > 0 && permanentExcludeList.some(ex => word.includes(ex))) continue;
-                            }
-
-                            let matchesBase = false;
-                            
-                            if (activeFilterType === 'pattern' || activeFilterType === 'v-c-pattern') {
-                                matchesBase = patternRegex.test(word);
-                            } else if (activeFilterType === 'anagram') {
-                                const wordCharMap = getCharMap(word);
-                                matchesBase = true;
-                                for (const char in wordCharMap) {
-                                    if (!queryCharMap[char] || wordCharMap[char] > queryCharMap[char]) { matchesBase = false; break; }
-                                }
-                            } else if (activeFilterType === 'include-all') {
-                                if (queryLetterSet) matchesBase = [...queryLetterSet].every(letter => word.includes(letter));
-                            } else {
-                                matchesBase = checkMatch(word, query);
-                            }
-
-                            if (matchesBase) {
-                                let score = 0;
-                                if (!ignoreIncludes && usePermanentFilters && permanentIncludeList.length > 0) {
-                                    let hasIncludeMatch = false;
-                                    permanentIncludeList.forEach((inc, index) => {
-                                        if (word.includes(inc)) {
-                                            score += Math.pow(10, permanentIncludeList.length - index);
-                                            hasIncludeMatch = true;
-                                        }
-                                    });
-                                    if (!hasIncludeMatch) continue; 
-                                }
-                                localResults.push({ word: word, lang: (activeFilterType === 'minecraft' ? 'mc' : 'default'), score: score });
-                            }
-                        }
-                        return localResults;
-                    }
-                    
-                    candidates = runStandardSearch(false, false);
-                    if (candidates.length === 0) candidates = runStandardSearch(true, false);
-                    if (candidates.length === 0) candidates = runStandardSearch(true, true);
                 }
                 
+                // Case: Standard / Specialized Lists
+                if (activeFilterType !== 'word-bomb' && activeFilterType !== 'wb-missing') {
+                    let sourceList;
+                    switch (activeFilterType) {
+                        case 'german': sourceList = germanList; break;
+                        case 'dutch': sourceList = dutchList; break;
+                        case 'finnish': sourceList = finnishList; break;
+                        case 'names': sourceList = nameList; break;
+                        case 'brands': sourceList = brandsSet; break;
+                        case 'countries': sourceList = countriesSet; break;
+                        case 'bad': sourceList = badSet; break;
+                        case 'science': sourceList = scienceSet; break;
+                        case 'jobs': sourceList = jobsSet; break;
+                        case 'languages': sourceList = languagesSet; break;
+                        case 'phobias': sourceList = new Set(phobiasMap.keys()); break;
+                        case 'animals': sourceList = animalsSet; break;
+                        case 'sports': sourceList = sportsSet; break;
+                        case 'colors': sourceList = colorsSet; break;
+                        case 'board-games': sourceList = boardGamesSet; break;
+                        case 'video-games': sourceList = videoGamesSet; break;
+                        case 'minecraft': sourceList = minecraftSet; break;
+                        case 'foods': sourceList = foodsSet; break;
+                        case 'cities': sourceList = citiesSet; break;
+                        case 'diseases': sourceList = diseasesSet; break;
+                        case 'religions': sourceList = religionsSet; break;
+                        case 'palindromes': sourceList = palindromesSet; break;
+                        default: sourceList = new Set(allCleanWords); break;
+                    }
+                    primaryLists.push({ set: sourceList, lang: (activeFilterType === 'minecraft' ? 'mc' : 'default') });
+                }
+
+                // Execute Primary Search
+                primaryLists.forEach(item => {
+                    runSearchOnList(item.set, item.lang);
+                });
+
+                // --- 3. EXECUTE DISC OVERRIDE SEARCH ---
+                // This guarantees that if a word is in disc.txt and matches the query, it is added
+                // regardless of the filter selected above.
+                runSearchOnList(discSet, 'en', true); // 'ignoreExisting = true' allows disc words to appear even in missing mode if they exist
+
+                // --- 4. FLATTEN & TAG ---
+                candidates = Array.from(candidateMap.values());
+                
+                // Apply Filter Length (Global)
                 if (lenFilter !== 'any' && lenFilter !== 'longest' && lenFilter !== 'shortest') {
                     const length = parseInt(lenFilter, 10);
                     candidates = candidates.filter(item => item.word.length === length);
                 }
-                
-                // --- 4. Tag Disc Words (With Safe Lowercase Check) ---
+
+                // Tag Disc Words explicitly (checking the Set again ensures priority)
                 candidates.forEach(item => {
                     if (discSet.has(item.word) || discSet.has(item.word.toLowerCase())) {
                         item.isDisc = true;
-                    } else {
-                        item.isDisc = false;
+                        // Give explicit bonus score
+                        item.score += 1000; 
                     }
                 });
 
-                // --- SORTING ---
+                // --- 5. SORTING ---
                 candidates.sort((a, b) => {
-                    // 1. Priority: Disc.txt words ALWAYS first
+                    // Priority 1: Disc words
                     if (a.isDisc && !b.isDisc) return -1;
                     if (!a.isDisc && b.isDisc) return 1;
 
+                    // Priority 2: Score (Includes/Disc Bonus)
                     if (b.score !== a.score) return b.score - a.score;
+
+                    // Priority 3: User Sort Selection
                     if (sortFilterType === 'longest' || lenFilter === 'longest') return b.word.length - a.word.length;
                     if (sortFilterType === 'shortest' || lenFilter === 'shortest') return a.word.length - b.word.length;
                     if (sortFilterType === 'common') return (wordFrequencyMap.get(b.word) || 0) - (wordFrequencyMap.get(a.word) || 0);
                     if (sortFilterType === 'least-common') return (wordFrequencyMap.get(a.word) || 0) - (wordFrequencyMap.get(b.word) || 0);
+                    
                     return 0; 
                 });
                 
                 // --- Randomize ---
                 if (sortFilterType === 'none' && lenFilter === 'any') {
-                    // Keep Disc words at top, shuffle rest
                     const discWords = candidates.filter(c => c.isDisc);
                     const normalWords = candidates.filter(c => !c.isDisc);
                     
@@ -1872,7 +1808,6 @@
                         });
                         return randomized;
                     };
-                    
                     candidates = [...discWords, ...shuffleGroup(normalWords)];
                 }
 
@@ -1978,7 +1913,6 @@
                     const originalWord = item.word;
                     const lang = item.lang;
                     
-                    // Insert Separator if language changes
                     if (previousLang !== null && lang !== previousLang) {
                         const sep = document.createElement('div');
                         sep.className = 'lang-separator';
@@ -2001,7 +1935,6 @@
                     wordElement.innerHTML = `<div class="word-content-row">${highlightedHtml}${ttsIcon}</div>`;
                     wordElement.className = `word-item lang-${lang}`;
                     
-                    // APPLY DISC HIGHLIGHT
                     if (item.isDisc) {
                         wordElement.classList.add('disc-highlight');
                     }
