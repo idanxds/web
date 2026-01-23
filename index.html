@@ -2460,7 +2460,7 @@
             }
         }
 
-            // --- CORRECTED FINDWORDS (Tiered Fallback) ---
+// --- CORRECTED FINDWORDS (Fixed Fallback) ---
             function findWords(query, uniqueFilterType, sortFilterType, lenFilter, wordsToExclude = []) {
                 const excludeSet = new Set(wordsToExclude);
                 let candidateMap = new Map(); 
@@ -2472,7 +2472,8 @@
                 let activeFilterType = uniqueFilterType;
 
                 if (uniqueFilterType === 'word-bomb' && wbLang !== 'all') {
-                    if (wbLang === 'mc') activeFilterType = 'minecraft'; else singleLangMode = wbLang;
+                    if (wbLang === 'mc') activeFilterType = 'minecraft';
+                    else singleLangMode = wbLang;
                 }
 
                 if (activeFilterType === 'wb-missing') {
@@ -2490,7 +2491,8 @@
                         if(singleLangMode==='fi') activeLists.push({set:finnishList, lang:'fi'});
                         if(singleLangMode==='mc') activeLists.push({set:minecraftSet, lang:'mc'});
                     } else {
-                        activeLists.push({set:wordBombList, lang:'en'}); activeLists.push({set:frenchList, lang:'fr'});
+                        activeLists.push({set:wordBombList, lang:'en'});
+                        activeLists.push({set:frenchList, lang:'fr'});
                         activeLists.push({set:spanishList, lang:'sp'}); activeLists.push({set:portugueseList, lang:'po'});
                         activeLists.push({set:indonesianList, lang:'in'}); activeLists.push({set:germanList, lang:'ge'});
                         activeLists.push({set:dutchList, lang:'du'}); activeLists.push({set:finnishList, lang:'fi'});
@@ -2529,8 +2531,10 @@
                 
                 let searchRegex = null, patternRegex = null, queryCharMap = null, queryLetterSet = null;
                 try { if (/[^a-zA-Z0-9\s\-]/.test(query)) searchRegex = new RegExp(query, 'i'); } catch (e) {}
-                if (uniqueFilterType === 'pattern') { try { patternRegex = new RegExp(query.replace(/_/g, '.'), 'i'); } catch (e) {} } 
-                else if (uniqueFilterType === 'v-c-pattern') { try { const p = query.replace(/v/gi, '[aeiouy]').replace(/c/gi, '[bcdfghjklmnpqrstvwxyz]'); patternRegex = new RegExp(`^${p}$`); } catch(e){} }
+                if (uniqueFilterType === 'pattern') { try { patternRegex = new RegExp(query.replace(/_/g, '.'), 'i');
+                } catch (e) {} } 
+                else if (uniqueFilterType === 'v-c-pattern') { try { const p = query.replace(/v/gi, '[aeiouy]').replace(/c/gi, '[bcdfghjklmnpqrstvwxyz]');
+                patternRegex = new RegExp(`^${p}$`); } catch(e){} }
                 else if (uniqueFilterType === 'anagram') queryCharMap = getCharMap(query);
                 else if (uniqueFilterType === 'include-all') queryLetterSet = new Set(query.split(''));
 
@@ -2540,8 +2544,10 @@
                     else if (uniqueFilterType === 'anagram') {
                         const wordCharMap = getCharMap(word);
                         matches = true;
-                        for (const char in wordCharMap) { if (!queryCharMap[char] || wordCharMap[char] > queryCharMap[char]) { matches = false; break; } }
-                    } else if (uniqueFilterType === 'include-all') { if (queryLetterSet) matches = [...queryLetterSet].every(letter => word.includes(letter)); }
+                        for (const char in wordCharMap) { if (!queryCharMap[char] || wordCharMap[char] > queryCharMap[char]) { matches = false; break;
+                        } }
+                    } else if (uniqueFilterType === 'include-all') { if (queryLetterSet) matches = [...queryLetterSet].every(letter => word.includes(letter));
+                    }
                     else if (searchRegex) matches = searchRegex.test(word);
                     else {
                         if (sortFilterType === 'starting') matches = word.startsWith(activeQuery);
@@ -2552,7 +2558,6 @@
                 };
 
                 // 3. Process Lists (Collect ALL Matches)
-                // IMPORTANT: We do NOT exclude used words here. We just tag them.
                 const processSet = (set, lang, isDiscScan) => {
                     for(const word of set) {
                         // Tag Status
@@ -2570,10 +2575,7 @@
                             permanentIncludeList.forEach((inc, i) => { if(word.includes(inc)) { score += Math.pow(10, permanentIncludeList.length - i); includeMatch=true; } });
                         }
                         
-                        // If standard search (not disc), strict includes apply. 
-                        // But we are lenient for fallback calculation, so we add it but maybe mark it?
-                        // For simplicity, we respect include list strictly.
-                        if(!includeMatch) continue; 
+                        if(!includeMatch) continue;
 
                         if (!candidateMap.has(word)) {
                             candidateMap.set(word, { word: word, lang: lang, score: score, isDisc: false, isUsed: isUsed, isExcluded: isExcluded });
@@ -2587,7 +2589,13 @@
                     }
                 };
 
+                // [FIX] Run standard lists
                 activeLists.forEach(l => processSet(l.set, l.lang, false));
+                
+                // [FIX] Always scan existingSet (Used Words) so they appear in fallback even if not in the active dictionary
+                processSet(existingSet, 'used', false);
+                
+                // [FIX] Always scan discSet
                 processSet(discSet, 'en', true);
 
                 let allCandidates = Array.from(candidateMap.values());
@@ -2600,16 +2608,16 @@
 
                 // 5. Tiered Filtering Logic (The Fallback System)
                 let finalResults = [];
-
+                
                 // Tier 0: Disc Words (Always Include)
                 const discResults = allCandidates.filter(c => c.isDisc);
-
+                
                 // Tier 1: Perfect Matches (Not Excluded, Not Used)
                 const perfectMatches = allCandidates.filter(c => !c.isDisc && !c.isExcluded && !c.isUsed);
-
+                
                 // Tier 2: Used Fallback (Not Excluded, But Used)
                 const usedFallback = allCandidates.filter(c => !c.isDisc && !c.isExcluded && c.isUsed);
-
+                
                 // Tier 3: Excluded Fallback (Excluded) - Only if truly desperate
                 const excludedFallback = allCandidates.filter(c => !c.isDisc && c.isExcluded);
 
