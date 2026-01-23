@@ -2129,678 +2129,348 @@
             <button id="define-close-button" class="btn" style="width: 100%; margin-top: 1.5rem;">Close</button>
         </div>
     </div>
-
-<script> 
+<script>
+    // --- 5. UI Handling & Event Listeners ---
     
-    document.addEventListener('DOMContentLoaded', () => {
-
-        // --- Element References ---
-        const searchForm = document.getElementById(&#39;search-form&#39;);
-        const searchInput = document.getElementById(&#39;search-input&#39;);
-        const searchFilter = document.getElementById(&#39;search-filter&#39;);
-        const capFilter = document.getElementById(&#39;cap-filter&#39;);
-        const lengthFilter = document.getElementById(&#39;length-filter&#39;);
-        const uniqueFilter = document.getElementById(&#39;unique-filter&#39;);
-        const wbLangSelect = document.getElementById(&#39;wb-lang-select&#39;);
-        
-        const resultsContainer = document.getElementById(&#39;results-container&#39;);
-        const loadingMessage = document.getElementById(&#39;loading-message&#39;);
-        const resetButton = document.getElementById(&#39;reset-button&#39;);
-        const gameToggleButton = document.getElementById(&#39;game-toggle-button&#39;);
-        const toggleHistoryButton = document.getElementById(&#39;toggle-history-button&#39;);
-        const closeHistoryButton = document.getElementById(&#39;close-history-button&#39;);
-        const historyPanel = document.getElementById(&#39;history-panel&#39;);
-        const historyContent = document.getElementById(&#39;history-content&#39;);
-        const historyHeader = document.getElementById(&#39;history-header&#39;);
-        const themeToggleButton = document.getElementById(&#39;theme-toggle-button&#39;);
-        const softlockButton = document.getElementById(&#39;softlock-button&#39;);
-        const tooltip = document.getElementById(&#39;word-tooltip&#39;);
-        const statsButton = document.getElementById(&#39;stats-button&#39;);
-        const statsModalOverlay = document.getElementById(&#39;stats-modal-overlay&#39;);
-        const statsCloseButton = document.getElementById(&#39;stats-close-button&#39;);
-        const statTotalWords = document.getElementById(&#39;stat-total-words&#39;);
-        const statFreqWords = document.getElementById(&#39;stat-freq-words&#39;);
-        const statAvgLength = document.getElementById(&#39;stat-avg-length&#39;);
-        const statsChart = document.getElementById(&#39;stats-chart&#39;);
-        const addIncludeButton = document.getElementById(&#39;add-include-button&#39;);
-        const addExcludeButton = document.getElementById(&#39;add-exclude-button&#39;);
-        const includeListTags = document.getElementById(&#39;include-list-tags&#39;);
-        const excludeListTags = document.getElementById(&#39;exclude-list-tags&#39;);
-        const historySearchInput = document.getElementById(&#39;history-search-bar&#39;);
-        const statTotalCopied = document.getElementById(&#39;stat-total-copied&#39;);
-        const statGameSessions = document.getElementById(&#39;stat-game-sessions&#39;);
-        const statAvgWordsGame = document.getElementById(&#39;stat-avg-words-game&#39;);
-        const mainAppDiv = document.getElementById(&#39;main-app&#39;);
-        const promptPageButton = document.getElementById(&#39;prompt-page-button&#39;);
-        const promptsPageDiv = document.getElementById(&#39;prompts-page&#39;);
-        const promptHomeButton = document.getElementById(&#39;prompt-home-button&#39;);
-        const promptSort = document.getElementById(&#39;prompt-sort&#39;);
-        const promptsListContainer = document.getElementById(&#39;prompts-list-container&#39;);
-        const defineToggleButton = document.getElementById(&#39;define-toggle-button&#39;);
-        const defineModalOverlay = document.getElementById(&#39;define-modal-overlay&#39;);
-        const defineModalTitle = document.getElementById(&#39;define-modal-title&#39;);
-        const defineModalBody = document.getElementById(&#39;define-modal-body&#39;);
-        const defineCloseButton = document.getElementById(&#39;define-close-button&#39;);
-        const defineModalNav = document.querySelector(&#39;.modal-tab-nav&#39;);
-        const defineSearchForm = document.getElementById(&#39;define-search-form&#39;);
-        const defineSearchInput = document.getElementById(&#39;define-search-input&#39;);
-        const subsearchPageButton = document.getElementById(&#39;subsearch-page-button&#39;);
-        const subsearchPageDiv = document.getElementById(&#39;subsearch-page&#39;);
-        const subsearchHomeButton = document.getElementById(&#39;subsearch-home-button&#39;);
-        const subsearchForm = document.getElementById(&#39;subsearch-form&#39;);
-        const subsearchInput = document.getElementById(&#39;subsearch-input&#39;);
-        const subsearchList = document.getElementById(&#39;subsearch-results-list&#39;);
-        const crazyModeButton = document.getElementById(&#39;crazy-mode-button&#39;);
-
-        // --- State Variables ---
-        let masterWordSet = new Set();
-        let discSet = new Set(); // Stores words from disc.txt
-        let allCleanWords = [];
-        let nameList = new Set();
-        let wordFrequencyMap = new Map();
-        let wordCopyCountMap = new Map();
-        let allCopiedWords = new Set();
-        let threeLetterPromptMap = new Map();
-        let promptsByCountMap = new Map();
-        let dictionaryStats = {
-            totalWords: 0,
-            freqWords: 0,
-            avgLength: 0,
-            lengthDistribution: new Map(),
-            maxLength: 0
-        };
-        let copiedWordsHistory = [];
-        let gameSessions = [];
-        let isGameMode = false;
-        let currentGameSession = null;
-        let permanentIncludeList = [];
-        let permanentExcludeList = [];
-        let isSoftlocked = false;
-        let softlockBuffer = &quot;&quot;;
-        let currentTheme = 0;
-        const themes = [&#39;dark-theme&#39;, &#39;light-theme&#39;, &#39;retro-theme&#39;];
-        const MAX_RESULTS_TO_DISPLAY = 300;
-        const synth = window.speechSynthesis;
-        let wordBombSelected = new Set();
-        let isDefineMode = false;
-        let isCrazyMode = false;
-        
-        // --- Specialized Lists ---
-        let wordBombList = new Set(); 
-        let frenchList = new Set(); 
-        let spanishList = new Set(); 
-        let portugueseList = new Set();
-        let indonesianList = new Set();
-        let germanList = new Set();
-        let dutchList = new Set();
-        let finnishList = new Set();
-        let existingSet = new Set(); 
-        let minecraftSet = new Set(); 
-        
-        let brandsSet = new Set();
-        let countriesSet = new Set(); 
-        let badSet = new Set();
-        let scienceSet = new Set();
-        let jobsSet = new Set();
-        let languagesSet = new Set();
-        let phobiasMap = new Map(); 
-        let animalsSet = new Set();
-        let sportsSet = new Set();
-        let colorsSet = new Set();
-        let boardGamesSet = new Set();
-        let videoGamesSet = new Set();
-        let foodsSet = new Set();
-        let citiesMap = new Map(); 
-        let citiesSet = new Set(); 
-        let diseasesSet = new Set();
-        let religionsSet = new Set();
-        let palindromesSet = new Set();
-
-        // --- Utility Functions ---
-        function cleanForExistingCheck(str) {
-            return str.toLowerCase().replace(/[\^*]/g, &#39;&#39;).trim();
+        // Stats
+        function updateStatsDisplay() {
+            statTotalWords.textContent = masterWordSet.size.toLocaleString();
         }
-
-        function shuffleArray(array) {
-            for (let i = array.length - 1; i &gt; 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [array[i], array[j]] = [array[j], array[i]];
-            }
-        }
-        
-        function escapeRegExp(string) {
-            return string.replace(/[-\/\\^$*+?.()|[\]{}]/g, &#39;\\$&amp;&#39;);
-        }
-
-        function highlightQuery(word, query) {
-            let highlightedWord = word;
-            let queriesToHighlight = [];
-            if (query) queriesToHighlight.push(query);
-            if (uniqueFilter.value !== &#39;include-all&#39;) {
-                permanentIncludeList.forEach(item =&gt; queriesToHighlight.push(item));
-            }
-            const safeQueries = queriesToHighlight.filter(q =&gt; q &amp;&amp; q.length &gt; 0).map(escapeRegExp);
-            if (safeQueries.length &gt; 0) {
-                const regex = new RegExp(`(${safeQueries.join(&#39;|&#39;)})`, &#39;gi&#39;);
-                highlightedWord = word.replace(regex, &#39;&lt;span class=&quot;highlight&quot;&gt;$1&lt;/span&gt;&#39;);
-            }
-            return highlightedWord;
-        }
-
-        function getCharMap(word) {
-            const map = {};
-            for (const char of word) { map[char] = (map[char] || 0) + 1; }
-            return map;
-        }
-        
-        function applyRandomLetterCaps(word) {
-            return word.split(&#39;&#39;).map(char =&gt; Math.random() &lt; 0.5 ? char.toUpperCase() : char).join(&#39;&#39;);
-        }
-        function getEffectiveCapMode() {
-            let mode = capFilter.value;
-            if (mode === &#39;random-mode&#39;) {
-                const modes = [&#39;none&#39;, &#39;all&#39;, &#39;random-letter&#39;];
-                mode = modes[Math.floor(Math.random() * modes.length)];
-            }
-            return mode;
-        }
-        function applyCapping(word, mode) {
-            switch (mode) {
-                case &#39;all&#39;: return word.toUpperCase();
-                case &#39;random-letter&#39;: return applyRandomLetterCaps(word);
-                case &#39;none&#39;: default: return word;
-            }
-        }
-        
-        function saveState() {
-            try {
-                localStorage.setItem(&#39;wordFinderGameSessions&#39;, JSON.stringify(gameSessions));
-                localStorage.setItem(&#39;wordFinderCopyCounts&#39;, JSON.stringify(Array.from(wordCopyCountMap.entries())));
-                localStorage.setItem(&#39;wordFinderTheme&#39;, themes[currentTheme]);
-                localStorage.setItem(&#39;wordFinderIncludeList&#39;, JSON.stringify(permanentIncludeList));
-                localStorage.setItem(&#39;wordFinderExcludeList&#39;, JSON.stringify(permanentExcludeList));
-            } catch (e) { }
-        }
-        function loadState() {
-            try { gameSessions = JSON.parse(localStorage.getItem(&#39;wordFinderGameSessions&#39;) || &#39;[]&#39;); } catch (e) { gameSessions = []; }
-            try { wordCopyCountMap = new Map(JSON.parse(localStorage.getItem(&#39;wordFinderCopyCounts&#39;) || &#39;[]&#39;)); allCopiedWords = new Set(wordCopyCountMap.keys()); } catch (e) { }
-            const savedTheme = localStorage.getItem(&#39;wordFinderTheme&#39;);
-            if (savedTheme &amp;&amp; themes.includes(savedTheme)) { currentTheme = themes.indexOf(savedTheme) - 1; } else { currentTheme = -1; }
-            toggleTheme();
-            try { permanentIncludeList = JSON.parse(localStorage.getItem(&#39;wordFinderIncludeList&#39;) || &#39;[]&#39;); } catch (e) { }
-            try { permanentExcludeList = JSON.parse(localStorage.getItem(&#39;wordFinderExcludeList&#39;) || &#39;[]&#39;); } catch (e) { }
-            updateHistoryPanel();
-            renderIncludeExcludeTags();
-        }
-        
-        function updateHistoryCounter() {
-            const total = copiedWordsHistory.length + gameSessions.reduce((acc, s) =&gt; acc + s.words.length, 0);
-            toggleHistoryButton.textContent = `History (${total})`;
-        }
-        function updateHistoryPanel() {
-            const searchTerm = historySearchInput.value.toLowerCase();
-            historyContent.innerHTML = &#39;&#39;;
-            gameSessions.forEach(session =&gt; {
-                const sessionMatches = session.name.toLowerCase().includes(searchTerm) || (session.words &amp;&amp; session.words.some(item =&gt; item.word.includes(searchTerm)));
-                if (!searchTerm || sessionMatches) {
-                    const sessionElement = document.createElement(&#39;details&#39;);
-                    sessionElement.open = !!searchTerm;
-                    sessionElement.className = `game-session ${session !== currentGameSession ? &#39;locked&#39; : &#39;&#39;}`;
-                    sessionElement.dataset.sessionId = session.id;
-                    sessionElement.innerHTML = `&lt;summary&gt;${session.name}&lt;div class=&quot;session-controls&quot;&gt;&lt;button class=&quot;btn rename-btn&quot;&gt;Rename&lt;/button&gt;&lt;button class=&quot;btn delete-session-btn&quot;&gt;Delete&lt;/button&gt;&lt;/div&gt;&lt;/summary&gt;`;
-                    const wordList = document.createElement(&#39;ul&#39;);
-                    wordList.className = &#39;session-word-list&#39;;
-                    session.words.forEach(item =&gt; {
-                        if (!searchTerm || item.word.includes(searchTerm)) {
-                            const li = document.createElement(&#39;li&#39;);
-                            li.innerHTML = `&lt;div&gt;&lt;span&gt;${item.word}&lt;/span&gt;&lt;/div&gt;&lt;button class=&quot;delete-word-btn&quot; data-word=&quot;${item.word}&quot;&gt;×&lt;/button&gt;`;
-                            wordList.appendChild(li);
-                        }
-                    });
-                    sessionElement.appendChild(wordList);
-                    historyContent.appendChild(sessionElement);
-                }
-            });
-            historyHeader.textContent = `History`;
-            updateHistoryCounter();
-        }
-        
-    async function loadAndProcessFile() {
-        try {
-            loadingMessage.style.display = &#39;block&#39;;
-            const loadList = async (filename, targetSet, isExistingFile = false, forceLower = false) =&gt; {
-                try {
-                    const res = await fetch(filename);
-                    if (res.ok) {
-                        const text = await res.text();
-                        text.split(&#39;\n&#39;).forEach(line =&gt; {
-                            let word = line.trim();
-                            if (isExistingFile) word = cleanForExistingCheck(word);
-                            else if (forceLower) word = word.toLowerCase();
-                            else word = word.toLowerCase();
-                            if (word.length &gt; 0) targetSet.add(word); 
-                        });
-                    }
-                } catch (e) {}
-            };
-            
-            await loadList(&#39;initial_dictionary.txt&#39;, masterWordSet);
-            allCleanWords = Array.from(masterWordSet);
-            const responseFreq = await fetch(&#39;word_freq_list.txt&#39;);
-            if (responseFreq.ok) {
-                const textFreq = await responseFreq.text();
-                textFreq.split(&#39;\n&#39;).forEach(line =&gt; {
-                    const parts = line.split(&#39;,&#39;);
-                    if (parts.length === 2) {
-                        const count = parseInt(parts[1].trim(), 10);
-                        if (!isNaN(count)) wordFrequencyMap.set(parts[0].trim().toLowerCase(), count);
-                    }
-                });
-            }
-            
-            await loadList(&#39;names_list.txt&#39;, nameList);
-            await loadList(&#39;brands_list.txt&#39;, brandsSet);
-            await loadList(&#39;countries_list.txt&#39;, countriesSet);
-            await loadList(&#39;bad_list.txt&#39;, badSet);
-            await loadList(&#39;science_list.txt&#39;, scienceSet);
-            await loadList(&#39;jobs_list.txt&#39;, jobsSet);
-            await loadList(&#39;languages_list.txt&#39;, languagesSet);
-            await loadList(&#39;animals_list.txt&#39;, animalsSet);
-            await loadList(&#39;sports_list.txt&#39;, sportsSet);
-            await loadList(&#39;colors_list.txt&#39;, colorsSet);
-            await loadList(&#39;bgames_list.txt&#39;, boardGamesSet);
-            await loadList(&#39;vgames_list.txt&#39;, videoGamesSet);
-            await loadList(&#39;minecraft.txt&#39;, minecraftSet);
-            await loadList(&#39;foods_list.txt&#39;, foodsSet);
-            await loadList(&#39;diseases_list.txt&#39;, diseasesSet);
-            await loadList(&#39;religions_list.txt&#39;, religionsSet);
-            await loadList(&#39;palindromes_list.txt&#39;, palindromesSet);
-            
-            await loadList(&#39;wb_list.txt&#39;, wordBombList); 
-            await loadList(&#39;disc.txt&#39;, discSet, false, true); // Force Lowercase on Disc
-            await loadList(&#39;french_list.txt&#39;, frenchList);
-            await loadList(&#39;spanish_list.txt&#39;, spanishList);
-            await loadList(&#39;portuguese_list.txt&#39;, portugueseList);
-            await loadList(&#39;indonesian_list.txt&#39;, indonesianList);
-            await loadList(&#39;german_list.txt&#39;, germanList);
-            await loadList(&#39;dutch_list.txt&#39;, dutchList);
-            await loadList(&#39;finnish_list.txt&#39;, finnishList);
-            await loadList(&#39;existing.txt&#39;, existingSet, true); 
     
-            try {
-                const phRes = await fetch(&#39;phobias_list.txt&#39;);
-                if (phRes.ok) {
-                    const phText = await phRes.text();
-                    phText.split(&#39;\n&#39;).forEach(line =&gt; {
-                        const parts = line.split(&#39;:&#39;);
-                        if (parts.length &gt;= 2) phobiasMap.set(parts[0].trim().toLowerCase(), parts.slice(1).join(&#39;:&#39;).trim());
-                    });
-                }
-            } catch (e) {}
-            
-            if (countriesSet.size &gt; 0) {
-                const countryArray = Array.from(countriesSet);
-                await Promise.all(countryArray.map(async (country) =&gt; {
-                    try {
-                        const cRes = await fetch(`.devcontainer/${country}.txt`);
-                        if (cRes.ok) {
-                            const cText = await cRes.text();
-                            cText.split(&#39;\n&#39;).forEach(line =&gt; {
-                                const city = line.trim().toLowerCase();
-                                if(city.length &gt; 0) { citiesSet.add(city); citiesMap.set(city, country); }
-                            });
-                        }
-                    } catch (e) {}
-                }));
-            }
-            loadingMessage.style.display = &#39;none&#39;;
-            resultsContainer.style.display = &#39;block&#39;;
-            calculateStatsAndPrompts();
-        } catch (error) {
-            loadingMessage.textContent = `Error: ${error.message}`;
-        }
-    }
-    // ... (continue) ...
-</script>
-
-<script> // --- CORRECTED FINDWORDS (Tiered Fallback) --- function findWords(query, uniqueFilterType, sortFilterType, lenFilter, wordsToExclude = []) { const excludeSet = new Set(wordsToExclude); let candidateMap = new Map();
-
-            // 1. Determine Source List(s)
-            let activeLists = [];
-            let singleLangMode = null;
-            const wbLang = wbLangSelect.value;
-            let activeFilterType = uniqueFilterType;
-
-            if (uniqueFilterType === &#39;word-bomb&#39; &amp;&amp; wbLang !== &#39;all&#39;) {
-                if (wbLang === &#39;mc&#39;) activeFilterType = &#39;minecraft&#39;; else singleLangMode = wbLang;
-            }
-
-            if (activeFilterType === &#39;wb-missing&#39;) {
-                activeLists.push({set: wordBombList, lang: &#39;en&#39;});
-            } else if (activeFilterType === &#39;word-bomb&#39;) {
-                if (query.toUpperCase().startsWith(&#39;:MC&#39;)) activeLists.push({set: minecraftSet, lang: &#39;mc&#39;});
-                else if (singleLangMode) {
-                    if(singleLangMode===&#39;en&#39;) activeLists.push({set:wordBombList, lang:&#39;en&#39;});
-                    if(singleLangMode===&#39;fr&#39;) activeLists.push({set:frenchList, lang:&#39;fr&#39;});
-                    if(singleLangMode===&#39;sp&#39;) activeLists.push({set:spanishList, lang:&#39;sp&#39;});
-                    if(singleLangMode===&#39;po&#39;) activeLists.push({set:portugueseList, lang:&#39;po&#39;});
-                    if(singleLangMode===&#39;in&#39;) activeLists.push({set:indonesianList, lang:&#39;in&#39;});
-                    if(singleLangMode===&#39;ge&#39;) activeLists.push({set:germanList, lang:&#39;ge&#39;});
-                    if(singleLangMode===&#39;du&#39;) activeLists.push({set:dutchList, lang:&#39;du&#39;});
-                    if(singleLangMode===&#39;fi&#39;) activeLists.push({set:finnishList, lang:&#39;fi&#39;});
-                    if(singleLangMode===&#39;mc&#39;) activeLists.push({set:minecraftSet, lang:&#39;mc&#39;});
-                } else {
-                    activeLists.push({set:wordBombList, lang:&#39;en&#39;}); activeLists.push({set:frenchList, lang:&#39;fr&#39;});
-                    activeLists.push({set:spanishList, lang:&#39;sp&#39;}); activeLists.push({set:portugueseList, lang:&#39;po&#39;});
-                    activeLists.push({set:indonesianList, lang:&#39;in&#39;}); activeLists.push({set:germanList, lang:&#39;ge&#39;});
-                    activeLists.push({set:dutchList, lang:&#39;du&#39;}); activeLists.push({set:finnishList, lang:&#39;fi&#39;});
-                    activeLists.push({set:minecraftSet, lang:&#39;mc&#39;});
-                }
-            } else {
-                let s;
-                if(activeFilterType === &#39;minecraft&#39;) s = minecraftSet;
-                else if(activeFilterType === &#39;names&#39;) s = nameList;
-                else if(activeFilterType === &#39;countries&#39;) s = countriesSet;
-                else if(activeFilterType === &#39;brands&#39;) s = brandsSet;
-                else if(activeFilterType === &#39;bad&#39;) s = badSet;
-                else if(activeFilterType === &#39;science&#39;) s = scienceSet;
-                else if(activeFilterType === &#39;jobs&#39;) s = jobsSet;
-                else if(activeFilterType === &#39;languages&#39;) s = languagesSet;
-                else if(activeFilterType === &#39;phobias&#39;) s = new Set(phobiasMap.keys());
-                else if(activeFilterType === &#39;animals&#39;) s = animalsSet;
-                else if(activeFilterType === &#39;sports&#39;) s = sportsSet;
-                else if(activeFilterType === &#39;colors&#39;) s = colorsSet;
-                else if(activeFilterType === &#39;board-games&#39;) s = boardGamesSet;
-                else if(activeFilterType === &#39;video-games&#39;) s = videoGamesSet;
-                else if(activeFilterType === &#39;foods&#39;) s = foodsSet;
-                else if(activeFilterType === &#39;cities&#39;) s = citiesSet;
-                else if(activeFilterType === &#39;diseases&#39;) s = diseasesSet;
-                else if(activeFilterType === &#39;religions&#39;) s = religionsSet;
-                else if(activeFilterType === &#39;palindromes&#39;) s = palindromesSet;
-                else s = new Set(allCleanWords);
-                activeLists.push({set:s, lang:&#39;default&#39;});
-            }
-
-            // 2. Prepare Match Logic
-            let activeQuery = query;
-            if ((uniqueFilterType === &#39;word-bomb&#39; || uniqueFilterType === &#39;wb-missing&#39;) &amp;&amp; (query.startsWith(&#39;:&#39;) || query.includes(&#39; &#39;))) {
-                 activeQuery = query.replace(/^:.. /, &#39;&#39;).replace(/ /g, &#39;-&#39;);
-            }
-            
-            let searchRegex = null, patternRegex = null, queryCharMap = null, queryLetterSet = null;
-            try { if (/[^a-zA-Z0-9\s\-]/.test(query)) searchRegex = new RegExp(query, &#39;i&#39;); } catch (e) {}
-            if (uniqueFilterType === &#39;pattern&#39;) { try { patternRegex = new RegExp(query.replace(/_/g, &#39;.&#39;), &#39;i&#39;); } catch (e) {} } 
-            else if (uniqueFilterType === &#39;v-c-pattern&#39;) { try { const p = query.replace(/v/gi, &#39;[aeiouy]&#39;).replace(/c/gi, &#39;[bcdfghjklmnpqrstvwxyz]&#39;); patternRegex = new RegExp(`^${p}$`); } catch(e){} }
-            else if (uniqueFilterType === &#39;anagram&#39;) queryCharMap = getCharMap(query);
-            else if (uniqueFilterType === &#39;include-all&#39;) queryLetterSet = new Set(query.split(&#39;&#39;));
-
-            const checkMatch = (word) =&gt; {
-                let matches = false;
-                if (uniqueFilterType === &#39;pattern&#39; || uniqueFilterType === &#39;v-c-pattern&#39;) matches = patternRegex &amp;&amp; patternRegex.test(word);
-                else if (uniqueFilterType === &#39;anagram&#39;) {
-                    const wordCharMap = getCharMap(word);
-                    matches = true;
-                    for (const char in wordCharMap) { if (!queryCharMap[char] || wordCharMap[char] &gt; queryCharMap[char]) { matches = false; break; } }
-                } else if (uniqueFilterType === &#39;include-all&#39;) { if (queryLetterSet) matches = [...queryLetterSet].every(letter =&gt; word.includes(letter)); }
-                else if (searchRegex) matches = searchRegex.test(word);
-                else {
-                    if (sortFilterType === &#39;starting&#39;) matches = word.startsWith(activeQuery);
-                    else if (sortFilterType === &#39;ending&#39;) matches = word.endsWith(activeQuery);
-                    else matches = (activeQuery.length === 0 || word.includes(activeQuery));
-                }
-                return matches;
-            };
-
-            // 3. Process Lists (Collect ALL matches, do not filter &#39;used&#39; yet)
-            const processSet = (set, lang, isDiscScan) =&gt; {
-                for(const word of set) {
-                    // A. Check Excludes (Global)
-                    if (excludeSet.has(word)) continue;
-                    if (permanentExcludeList.length &gt; 0 &amp;&amp; permanentExcludeList.some(ex =&gt; word.includes(ex))) continue;
-
-                    // B. Check Includes (Global) - CRITICAL: Must be met even for fallback
-                    if (permanentIncludeList.length &gt; 0) {
-                        if (!permanentIncludeList.every(inc =&gt; word.includes(inc))) continue;
-                    }
-
-                    // C. Check Query Match
-                    if (!checkMatch(word)) continue;
-
-                    // D. Determine Status
-                    const clean = cleanForExistingCheck(word);
-                    const isUsed = existingSet.has(clean);
-                    
-                    let score = 0;
-                    if (permanentIncludeList.length &gt; 0) score += 1000; // Bonus for included words
-                    
-                    if (!candidateMap.has(word)) {
-                        candidateMap.set(word, { word: word, lang: lang, score: score, isDisc: false, isUsed: isUsed });
-                    }
-                    
-                    if (isDiscScan) {
-                        const item = candidateMap.get(word);
-                        item.isDisc = true;
-                        item.score += 5000; 
-                    }
-                }
-            };
-
-            activeLists.forEach(l =&gt; processSet(l.set, l.lang, false));
-            processSet(discSet, &#39;en&#39;, true);
-
-            let allCandidates = Array.from(candidateMap.values());
-
-            // 4. Length Filter
-            if (lenFilter !== &#39;any&#39; &amp;&amp; lenFilter !== &#39;longest&#39; &amp;&amp; lenFilter !== &#39;shortest&#39;) {
-                const len = parseInt(lenFilter, 10);
-                allCandidates = allCandidates.filter(i =&gt; i.word.length === len);
-            }
-
-            // 5. Tiered Filtering Logic
-            // Bucket 1: Disc words (Always show)
-            const discResults = allCandidates.filter(c =&gt; c.isDisc);
-            
-            // Bucket 2: Unused words (The Fresh Results)
-            const unusedResults = allCandidates.filter(c =&gt; !c.isDisc &amp;&amp; !c.isUsed);
-            
-            // Bucket 3: Used words (The Fallback)
-            const usedResults = allCandidates.filter(c =&gt; !c.isDisc &amp;&amp; c.isUsed);
-
-            let finalResults = [];
-
-            if (unusedResults.length &gt; 0) {
-                // Standard: Disc + Fresh
-                finalResults = [...discResults, ...unusedResults];
-            } else {
-                // Fallback: Disc + Used
-                finalResults = [...discResults, ...usedResults];
-            }
-
-            // 6. Sort
-            finalResults.sort((a, b) =&gt; {
-                // Priority 1: Disc
-                if (a.isDisc &amp;&amp; !b.isDisc) return -1;
-                if (!a.isDisc &amp;&amp; b.isDisc) return 1;
-                
-                // Priority 2: Unused &gt; Used
-                if (a.isUsed &amp;&amp; !b.isUsed) return 1;
-                if (!a.isUsed &amp;&amp; b.isUsed) return -1;
-
-                // Priority 3: Internal Score
-                if (b.score !== a.score) return b.score - a.score;
-                
-                // Priority 4: User Sort
-                if (sortFilterType === &#39;longest&#39; || lenFilter === &#39;longest&#39;) return b.word.length - a.word.length;
-                if (sortFilterType === &#39;shortest&#39; || lenFilter === &#39;shortest&#39;) return a.word.length - b.word.length;
-                if (sortFilterType === &#39;common&#39;) return (wordFrequencyMap.get(b.word)||0) - (wordFrequencyMap.get(a.word)||0);
-                return 0;
-            });
-
-            if (sortFilterType === &#39;none&#39; &amp;&amp; lenFilter === &#39;any&#39;) {
-                const disc = finalResults.filter(i =&gt; i.isDisc);
-                const rest = finalResults.filter(i =&gt; !i.isDisc);
-                shuffleArray(rest);
-                return [...disc, ...rest];
-            }
-
-            return finalResults;
-        }
-        
-        function copyToClipboard(formattedWord, originalWord, element, query = &quot;&quot;) {
-            navigator.clipboard.writeText(formattedWord).then(() =&gt; {
+        // Copying
+        function copyToClipboard(formattedWord, originalWord, element, query = "") {
+            navigator.clipboard.writeText(formattedWord).then(() => {
                 const count = (wordCopyCountMap.get(originalWord) || 0) + 1;
                 wordCopyCountMap.set(originalWord, count);
                 allCopiedWords.add(originalWord);
                 saveState();
+                
                 if (element) {
-                    element.classList.add(&#39;copied&#39;);
-                    element.dataset.tooltip = getTooltipText(originalWord);
+                    element.classList.add('copied');
+                    // element.dataset.tooltip ... (tooltip logic optional)
                 } else {
                     resultsContainer.innerHTML = `Copied: ${highlightQuery(formattedWord, query)}`;
                 }
-            }).catch(e =&gt; console.error(e));
+            }).catch(e => console.error(e));
         }
+    
+        // History
         function addToHistory(originalWord, query, uniqueFilterType, sortFilterType, capMode) {
-            const item = { word: originalWord, query: query || permanentIncludeList.join(&#39;,&#39;) || &#39;n/a&#39;, filter: `${uniqueFilterType}/${sortFilterType}`, caps: capMode, game: isGameMode };
-            if (isGameMode &amp;&amp; currentGameSession) {
-                if (!currentGameSession.words.some(w =&gt; w.word === originalWord)) { currentGameSession.words.push(item); saveState(); }
-            } else if (!isGameMode) {
-                if (!copiedWordsHistory.some(w =&gt; w.word === originalWord)) copiedWordsHistory.push(item);
+            const item = { word: originalWord, query: query || 'n/a', filter: uniqueFilterType, caps: capMode };
+            if (isGameMode && currentGameSession) {
+                // Avoid duplicates in session
+                if (!currentGameSession.words.some(w => w.word === originalWord)) {
+                    currentGameSession.words.push(item);
+                    saveState();
+                }
+            } else {
+                // General history
+                copiedWordsHistory.push(item);
             }
             updateHistoryPanel();
         }
-        function handleSearch(event) {
-            if (event) event.preventDefault();
-            const query = isSoftlocked ? softlockBuffer.trim().toLowerCase() : searchInput.value.trim().toLowerCase();
-            if(isCrazyMode) { resultsContainer.textContent = &quot;Crazy Mode not supported.&quot;; return; }
-            const capMode = getEffectiveCapMode();
-            if (isGameMode) handleGameSearch(query, uniqueFilter.value, searchFilter.value, lengthFilter.value, capMode);
-            else handleNormalSearch(query, uniqueFilter.value, searchFilter.value, lengthFilter.value, capMode);
-            if(isSoftlocked) softlockBuffer = &quot;&quot;;
-        }
-        function getTooltipText(word) {
-            return `Length: ${word.length} | Freq: ${wordFrequencyMap.get(word)||&#39;N/A&#39;} | Copied: ${wordCopyCountMap.get(word)||0}`;
-        }
-        function handleNormalSearch(query, uniqueFilterType, sortFilterType, lenFilter, capMode) {
-            resultsContainer.innerHTML = &#39;&#39;;
-            if (!query &amp;&amp; permanentIncludeList.length === 0 &amp;&amp; ![&#39;word-bomb&#39;,&#39;wb-missing&#39;].includes(uniqueFilterType)) return;
-            const matches = findWords(query, uniqueFilterType, sortFilterType, lenFilter);
-            if (matches.length === 0) { resultsContainer.textContent = &quot;No words found.&quot;; return; }
+    
+        function updateHistoryPanel() {
+            const searchTerm = historySearchInput.value.toLowerCase();
+            historyContent.innerHTML = '';
             
-            const fragment = document.createDocumentFragment();
-            const summary = document.createElement(&#39;div&#39;);
-            summary.id = &#39;results-summary&#39;;
-            summary.textContent = `Showing ${Math.min(matches.length, MAX_RESULTS_TO_DISPLAY)} of ${matches.length} matches.`;
-            fragment.appendChild(summary);
+            // Show current sessions
+            gameSessions.forEach(session => {
+                const sessionElement = document.createElement('details');
+                sessionElement.className = `game-session ${session !== currentGameSession ? 'locked' : ''}`;
+                sessionElement.innerHTML = `<summary>${session.name} (${session.words.length})</summary>`;
+                
+                const list = document.createElement('ul');
+                list.className = 'session-word-list';
+                
+                session.words.forEach(w => {
+                    if(!searchTerm || w.word.includes(searchTerm)){
+                        const li = document.createElement('li');
+                        li.innerHTML = `<span>${w.word}</span>`;
+                        list.appendChild(li);
+                    }
+                });
+                sessionElement.appendChild(list);
+                historyContent.appendChild(sessionElement);
+            });
             
-            let prevLang = null;
-            for (const item of matches.slice(0, MAX_RESULTS_TO_DISPLAY)) {
-                if (prevLang !== null &amp;&amp; item.lang !== prevLang) {
-                    const sep = document.createElement(&#39;div&#39;);
-                    sep.className = &#39;lang-separator&#39;;
-                    sep.innerText = item.lang; 
-                    fragment.appendChild(sep);
-                }
-                prevLang = item.lang;
-                
-                const span = document.createElement(&#39;span&#39;);
-                let displayQuery = query;
-                if ((uniqueFilterType===&#39;word-bomb&#39; || uniqueFilterType===&#39;wb-missing&#39;) &amp;&amp; (query.startsWith(&#39;:&#39;) || query.includes(&#39; &#39;))) displayQuery = query.replace(/^:.. /, &#39;&#39;).replace(/ /g, &#39;-&#39;);
-                
-                const html = highlightQuery(applyCapping(item.word, capMode), displayQuery);
-                span.innerHTML = `&lt;div class=&quot;word-content-row&quot;&gt;${html}&lt;span class=&quot;tts-icon&quot;&gt;🔊&lt;/span&gt;&lt;/div&gt;`;
-                span.className = `word-item lang-${item.lang}`;
-                if(item.isDisc) span.classList.add(&#39;disc-highlight&#39;);
-                if(uniqueFilterType===&#39;minecraft&#39; || item.lang===&#39;mc&#39;) span.classList.add(&#39;style-minecraft&#39;);
-                span.dataset.originalWord = item.word;
-                if(allCopiedWords.has(item.word)) span.classList.add(&#39;copied&#39;);
-                fragment.appendChild(span);
+            toggleHistoryButton.textContent = `History (${gameSessions.reduce((a,b)=>a+b.words.length,0)})`;
+        }
+    
+        // State Management
+        function saveState() {
+            try {
+                localStorage.setItem('wordFinderGameSessions', JSON.stringify(gameSessions));
+                localStorage.setItem('wordFinderIncludeList', JSON.stringify(permanentIncludeList));
+                localStorage.setItem('wordFinderExcludeList', JSON.stringify(permanentExcludeList));
+                localStorage.setItem('wordFinderTheme', themes[currentTheme]);
+            } catch(e){}
+        }
+        
+        function loadState() {
+            try { gameSessions = JSON.parse(localStorage.getItem('wordFinderGameSessions') || '[]'); } catch(e){}
+            try { permanentIncludeList = JSON.parse(localStorage.getItem('wordFinderIncludeList') || '[]'); } catch(e){}
+            try { permanentExcludeList = JSON.parse(localStorage.getItem('wordFinderExcludeList') || '[]'); } catch(e){}
+            const t = localStorage.getItem('wordFinderTheme');
+            if(t && themes.includes(t)) {
+                document.body.classList.remove(themes[currentTheme]);
+                currentTheme = themes.indexOf(t);
+                document.body.classList.add(themes[currentTheme]);
             }
-            resultsContainer.appendChild(fragment);
+            renderIncludeExcludeTags();
+            updateHistoryPanel();
         }
-        function handleGameSearch(query, unique, sort, len, cap) {
-            if (!currentGameSession) return;
-            const used = currentGameSession.words.map(w =&gt; w.word);
-            let matches = findWords(query, unique, sort, len, used);
-            matches = matches.filter(m =&gt; !m.word.includes(&#39; &#39;) &amp;&amp; masterWordSet.has(m.word));
-            if(matches.length===0) { resultsContainer.textContent = &quot;No valid new words.&quot;; return; }
-            const item = matches[Math.floor(Math.random()*matches.length)];
-            copyToClipboard(applyCapping(item.word, cap), item.word, null, query);
-            addToHistory(item.word, query, unique, sort, cap);
-        }
-        
-        // --- Event Listeners ---
-        searchForm.addEventListener(&#39;submit&#39;, handleSearch);
-        themeToggleButton.addEventListener(&#39;click&#39;, toggleTheme);
-        function toggleTheme() { document.body.classList.remove(themes[currentTheme]); currentTheme=(currentTheme+1)%themes.length; document.body.classList.add(themes[currentTheme]); saveState(); }
-        
+    
         function renderIncludeExcludeTags() {
-            includeListTags.innerHTML = &#39;&#39;;
-            permanentIncludeList.forEach(item =&gt; {
-                const tag = document.createElement(&#39;span&#39;); tag.className = &#39;filter-tag filter-tag-include&#39;;
-                tag.innerHTML = `${item} &lt;button class=&quot;remove-tag-btn&quot; data-item=&quot;${item}&quot;&gt;×&lt;/button&gt;`;
-                includeListTags.appendChild(tag);
+            includeListTags.innerHTML = '';
+            permanentIncludeList.forEach(item => {
+                const span = document.createElement('span');
+                span.className = 'filter-tag filter-tag-include';
+                span.innerHTML = `${item} <button class="remove-tag-btn" data-type="inc" data-val="${item}">×</button>`;
+                includeListTags.appendChild(span);
             });
-            excludeListTags.innerHTML = &#39;&#39;;
-            permanentExcludeList.forEach(item =&gt; {
-                const tag = document.createElement(&#39;span&#39;); tag.className = &#39;filter-tag filter-tag-exclude&#39;;
-                tag.innerHTML = `${item} &lt;button class=&quot;remove-tag-btn&quot; data-item=&quot;${item}&quot;&gt;×&lt;/button&gt;`;
-                excludeListTags.appendChild(tag);
+            
+            excludeListTags.innerHTML = '';
+            permanentExcludeList.forEach(item => {
+                const span = document.createElement('span');
+                span.className = 'filter-tag filter-tag-exclude';
+                span.innerHTML = `${item} <button class="remove-tag-btn" data-type="exc" data-val="${item}">×</button>`;
+                excludeListTags.appendChild(span);
             });
         }
+    
+        // Search Handler
+        function handleSearch(event) {
+            if (event) event.preventDefault(); // Stop Refresh!
+            
+            const rawQuery = isSoftlocked ? softlockBuffer : searchInput.value;
+            const query = rawQuery.trim().toLowerCase();
+            
+            if (isCrazyMode) { resultsContainer.textContent = "Crazy Mode not available."; return; }
+    
+            const capMode = getEffectiveCapMode();
+            
+            if (isGameMode) {
+                // Game Search Logic
+                if (!currentGameSession) return;
+                // Exclude already used words in this session
+                const usedInSession = currentGameSession.words.map(w => w.word);
+                let matches = findWords(query, uniqueFilter.value, searchFilter.value, lengthFilter.value, usedInSession);
+                
+                // Strict Game Rules: Must be in main dictionary and no spaces
+                matches = matches.filter(m => !m.word.includes(' ') && masterWordSet.has(m.word));
+                
+                if (matches.length === 0) {
+                    resultsContainer.textContent = "No valid new words found.";
+                    return;
+                }
+                // Pick Random
+                const item = matches[Math.floor(Math.random() * matches.length)];
+                copyToClipboard(applyCapping(item.word, capMode), item.word, null, query);
+                addToHistory(item.word, query, uniqueFilter.value, searchFilter.value, capMode);
+                
+            } else {
+                // Normal Search Logic
+                resultsContainer.innerHTML = '';
+                // If empty query and no includes, do nothing
+                if (!query && permanentIncludeList.length === 0 && !['word-bomb','wb-missing'].includes(uniqueFilter.value)) return;
+    
+                const matches = findWords(query, uniqueFilter.value, searchFilter.value, lengthFilter.value);
+                
+                if (matches.length === 0) {
+                    resultsContainer.textContent = "No words found.";
+                    return;
+                }
+                
+                // Render Results
+                const frag = document.createDocumentFragment();
+                const summary = document.createElement('div');
+                summary.id = 'results-summary';
+                summary.textContent = `Found ${matches.length} words. Showing top ${Math.min(matches.length, MAX_RESULTS_TO_DISPLAY)}.`;
+                frag.appendChild(summary);
+                
+                let prevLang = null;
+                matches.slice(0, MAX_RESULTS_TO_DISPLAY).forEach(item => {
+                    if (prevLang && item.lang !== prevLang) {
+                        const sep = document.createElement('div');
+                        sep.className = 'lang-separator';
+                        sep.textContent = item.lang;
+                        frag.appendChild(sep);
+                    }
+                    prevLang = item.lang;
+                    
+                    const span = document.createElement('span');
+                    span.className = `word-item lang-${item.lang}`;
+                    if (item.isDisc) span.classList.add('disc-highlight');
+                    if (item.isUsed) span.style.opacity = '0.6'; // Visual cue for fallback words
+                    if (uniqueFilter.value === 'minecraft' || item.lang === 'mc') span.classList.add('style-minecraft');
+                    if (allCopiedWords.has(item.word)) span.classList.add('copied');
+                    
+                    span.dataset.originalWord = item.word;
+                    
+                    // Display Logic
+                    let displayQuery = query;
+                    if ((uniqueFilter.value.includes('word-bomb')) && query.includes(' ')) {
+                        displayQuery = query.split(' ')[1] || query;
+                    }
+                    
+                    const finalHtml = highlightQuery(applyCapping(item.word, capMode), displayQuery);
+                    span.innerHTML = `<div class="word-content-row">${finalHtml} <span class="tts-icon">🔊</span></div>`;
+                    frag.appendChild(span);
+                });
+                resultsContainer.appendChild(frag);
+            }
+            
+            if (isSoftlocked) softlockBuffer = "";
+        }
+    
+        // --- 6. Wiring up Events ---
         
-        addIncludeButton.addEventListener(&#39;click&#39;, () =&gt; { if(searchInput.value){ permanentIncludeList.push(searchInput.value.toLowerCase()); searchInput.value=&#39;&#39;; renderIncludeExcludeTags(); saveState(); }});
-        addExcludeButton.addEventListener(&#39;click&#39;, () =&gt; { if(searchInput.value){ permanentExcludeList.push(searchInput.value.toLowerCase()); searchInput.value=&#39;&#39;; renderIncludeExcludeTags(); saveState(); }});
-        includeListTags.addEventListener(&#39;click&#39;, (e) =&gt; { if(e.target.classList.contains(&#39;remove-tag-btn&#39;)) { permanentIncludeList=permanentIncludeList.filter(i=&gt;i!==e.target.dataset.item); renderIncludeExcludeTags(); saveState(); }});
-        excludeListTags.addEventListener(&#39;click&#39;, (e) =&gt; { if(e.target.classList.contains(&#39;remove-tag-btn&#39;)) { permanentExcludeList=permanentExcludeList.filter(i=&gt;i!==e.target.dataset.item); renderIncludeExcludeTags(); saveState(); }});
-        
-        gameToggleButton.addEventListener(&#39;click&#39;, () =&gt; {
+        // Prevent default form submission (FIXES THE REFRESH ISSUE)
+        if (searchForm) {
+            searchForm.addEventListener('submit', handleSearch);
+        }
+    
+        // Results Click
+        resultsContainer.addEventListener('click', (e) => {
+            const target = e.target.closest('.word-item');
+            if (target) {
+                const word = target.dataset.originalWord;
+                const capMode = getEffectiveCapMode();
+                copyToClipboard(applyCapping(word, capMode), word, target, searchInput.value);
+                // Also add to history on click
+                if (!isGameMode) addToHistory(word, searchInput.value, uniqueFilter.value, searchFilter.value, capMode);
+            }
+        });
+    
+        // Tag Removal
+        const handleTagRemove = (e, list, set) => {
+            if (e.target.classList.contains('remove-tag-btn')) {
+                const val = e.target.dataset.val;
+                const idx = list.indexOf(val);
+                if (idx > -1) list.splice(idx, 1);
+                renderIncludeExcludeTags();
+                saveState();
+            }
+        };
+        includeListTags.addEventListener('click', (e) => {
+            if (e.target.classList.contains('remove-tag-btn')) {
+                permanentIncludeList = permanentIncludeList.filter(i => i !== e.target.dataset.val);
+                renderIncludeExcludeTags();
+                saveState();
+            }
+        });
+        excludeListTags.addEventListener('click', (e) => {
+            if (e.target.classList.contains('remove-tag-btn')) {
+                permanentExcludeList = permanentExcludeList.filter(i => i !== e.target.dataset.val);
+                renderIncludeExcludeTags();
+                saveState();
+            }
+        });
+    
+        // Add Buttons
+        addIncludeButton.addEventListener('click', () => {
+            const val = searchInput.value.trim().toLowerCase();
+            if (val) {
+                permanentIncludeList.push(val);
+                searchInput.value = '';
+                renderIncludeExcludeTags();
+                saveState();
+            }
+        });
+        addExcludeButton.addEventListener('click', () => {
+            const val = searchInput.value.trim().toLowerCase();
+            if (val) {
+                permanentExcludeList.push(val);
+                searchInput.value = '';
+                renderIncludeExcludeTags();
+                saveState();
+            }
+        });
+    
+        // Theme
+        themeToggleButton.addEventListener('click', () => {
+            document.body.classList.remove(themes[currentTheme]);
+            currentTheme = (currentTheme + 1) % themes.length;
+            document.body.classList.add(themes[currentTheme]);
+            saveState();
+        });
+    
+        // History Toggle
+        toggleHistoryButton.addEventListener('click', () => historyPanel.classList.add('open'));
+        closeHistoryButton.addEventListener('click', () => historyPanel.classList.remove('open'));
+    
+        // Game Toggle
+        gameToggleButton.addEventListener('click', () => {
             isGameMode = !isGameMode;
-            if (isGameMode) { gameToggleButton.classList.add(&#39;game-active&#39;); softlockButton.style.display=&#39;inline-block&#39;; resultsContainer.innerHTML=&#39;Game Started&#39;; currentGameSession={id:Date.now(), name:&#39;Game&#39;, words:[]}; gameSessions.push(currentGameSession); }
-            else { gameToggleButton.classList.remove(&#39;game-active&#39;); softlockButton.style.display=&#39;none&#39;; resultsContainer.innerHTML=&#39;Game Ended&#39;; currentGameSession=null; }
-            updateHistoryPanel(); saveState();
+            if (isGameMode) {
+                gameToggleButton.classList.add('game-active');
+                softlockButton.style.display = 'inline-block';
+                resultsContainer.innerHTML = '<h3>Game Started</h3><p>Use Shift to search/copy a random word.</p>';
+                currentGameSession = { id: Date.now(), name: `Session ${gameSessions.length+1}`, words: [] };
+                gameSessions.push(currentGameSession);
+            } else {
+                gameToggleButton.classList.remove('game-active');
+                softlockButton.style.display = 'none';
+                resultsContainer.innerHTML = '<h3>Game Ended</h3>';
+                currentGameSession = null;
+            }
+            updateHistoryPanel();
+            saveState();
         });
-        
-        resetButton.addEventListener(&#39;click&#39;, () =&gt; {
-            if (confirm(&#39;Reset colored (copied) words? This cannot be undone.&#39;)) {
-                wordCopyCountMap.clear(); allCopiedWords.clear(); saveState();
-                const words = document.querySelectorAll(&#39;.word-item&#39;);
-                words.forEach(w =&gt; { w.classList.remove(&#39;copied&#39;); });
+    
+        // Softlock
+        softlockButton.addEventListener('click', () => {
+            isSoftlocked = !isSoftlocked;
+            document.body.classList.toggle('softlocked', isSoftlocked);
+            softlockButton.textContent = isSoftlocked ? 'Unlock' : 'Softlock';
+            if(isSoftlocked) softlockBuffer = "";
+        });
+    
+        // Keydown (Softlock & Shortcuts)
+        document.addEventListener('keydown', (e) => {
+            if (!isGameMode || !isSoftlocked) return;
+            
+            if (e.key === 'Shift') {
+                e.preventDefault();
+                handleSearch(null);
+            } else if (e.key === 'Backspace') {
+                softlockBuffer = softlockBuffer.slice(0, -1);
+                resultsContainer.innerHTML = `<div style="font-size: 2rem; margin-top: 20px;">${softlockBuffer}</div>`;
+            } else if (e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) {
+                softlockBuffer += e.key;
+                resultsContainer.innerHTML = `<div style="font-size: 2rem; margin-top: 20px;">${softlockBuffer}</div>`;
             }
         });
-        toggleHistoryButton.addEventListener(&#39;click&#39;, () =&gt; { historyPanel.classList.add(&#39;open&#39;); });
-        closeHistoryButton.addEventListener(&#39;click&#39;, () =&gt; { historyPanel.classList.remove(&#39;open&#39;); });
-        
-        // --- Stats &amp; Prompts (Simplified Placeholders) ---
-        function calculateStatsAndPrompts() {
-            dictionaryStats.totalWords = masterWordSet.size;
-            statTotalWords.textContent = dictionaryStats.totalWords.toLocaleString();
-        }
-        
-        softlockButton.addEventListener(&#39;click&#39;, () =&gt; { isSoftlocked=!isSoftlocked; document.body.classList.toggle(&#39;softlocked&#39;); softlockButton.textContent = isSoftlocked ? &#39;Unlock&#39; : &#39;Softlock&#39;; });
-        document.addEventListener(&#39;keydown&#39;, (e) =&gt; {
-            if(!isGameMode || !isSoftlocked) return;
-            e.preventDefault();
-            if(e.key===&#39;Shift&#39;) handleSearch(null);
-            else if(e.key===&#39;Backspace&#39;) softlockBuffer=softlockBuffer.slice(0,-1);
-            else if(e.key.length===1) softlockBuffer+=e.key;
-            if(e.key!==&#39;Shift&#39;) resultsContainer.innerHTML = `Softlock: ${softlockBuffer}`;
-        });
-        
-        resultsContainer.addEventListener(&#39;click&#39;, (e) =&gt; {
-            const t = e.target.closest(&#39;.word-item&#39;);
-            if(t) {
-                const w = t.dataset.originalWord;
-                if(isDefineMode) { defineWord(w); return; }
-                copyToClipboard(t.textContent.replace(&#39;🔊&#39;,&#39;&#39;), w, t, searchInput.value);
-                addToHistory(w, searchInput.value, uniqueFilter.value, searchFilter.value, &#39;none&#39;);
+    
+        // Reset
+        resetButton.addEventListener('click', () => {
+            if(confirm("Clear copied status of all words?")) {
+                wordCopyCountMap.clear();
+                allCopiedWords.clear();
+                saveState();
+                handleSearch(null); // refresh view
             }
         });
-        
-        // Init
+    
+        // Page Switching (Simple visibility toggle)
+        const showPage = (pageDiv) => {
+            [mainAppDiv, promptsPageDiv, subsearchPageDiv, translatorPageDiv].forEach(d => d.style.display = 'none');
+            pageDiv.style.display = 'block';
+        };
+        if(promptPageButton) promptPageButton.addEventListener('click', () => showPage(promptsPageDiv));
+        if(subsearchPageButton) subsearchPageButton.addEventListener('click', () => showPage(subsearchPageDiv));
+        if(translatorPageButton) translatorPageButton.addEventListener('click', () => showPage(translatorPageDiv));
+        if(promptHomeButton) promptHomeButton.addEventListener('click', () => showPage(mainAppDiv));
+        if(subsearchHomeButton) subsearchHomeButton.addEventListener('click', () => showPage(mainAppDiv));
+        const transHome = document.getElementById('translator-home-button');
+        if(transHome) transHome.addEventListener('click', () => showPage(mainAppDiv));
+    
+        // --- 7. Initialization ---
         loadState();
         loadAndProcessFile();
-    });
+    
+    }); // End DOMContentLoaded
 </script>
 </body>
 </html>
